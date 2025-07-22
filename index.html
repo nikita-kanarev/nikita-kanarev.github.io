@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Fontsampler + UI</title>
+  <title>Fontsampler с UI</title>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
 </head>
 <body>
@@ -10,18 +10,16 @@
   <div id="demo"></div>
 
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
-  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
-
   <script>
-    let node = document.getElementById("demo"),
-        fonts = [{
-          name: "Archaism-Test",
-          files: ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
-        }];
+    const node = document.getElementById("demo");
+    const fonts = [{
+      name: "Archaism-Test",
+      files: ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
+    }];
 
     new Fontsampler(node, fonts, {
       ui: ["testString", "fontSize", "lineHeight", "letterSpacing"],
-      testString: "Съешь ещё этих мягких французских булок да выпей чаю",
+      testString: "Съешь ещё этих мягких французских булок"
     }).init();
   </script>
 </body>
