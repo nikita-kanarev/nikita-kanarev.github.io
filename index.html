@@ -1,23 +1,27 @@
 <!DOCTYPE html>
-
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fontsampler Test</title>
+  <title>Fontsampler с Archaism</title>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
 </head>
-
 <body>
   <div id="fontsampler-container" style="margin: 2rem;"></div>
 
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const sampler = Fontsampler(document.getElementById("fontsampler-container"), {}, {
+    document.addEventListener("DOMContentLoaded", () => {
+      Fontsampler({
+        container: document.getElementById("fontsampler-container"),
+        fonts: [
+          {
+            name: "Archaism-Test",
+            source: "https://nikita-kanarev.github.io/Archaism-Test.woff2",
+          }
+        ],
         ui: ["fontSize", "lineHeight", "testString"],
-      });
-      sampler.loadFont("Archaism-Test", {
-        source: "https://nikita-kanarev.github.io/Archaism-Test.woff2"
+        testString: "Пример тестовой строки"
       });
     });
   </script>
