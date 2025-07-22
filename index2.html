@@ -17,9 +17,21 @@ var fonts = [{
     "name": "My Font",
     "files": ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
 }];
+
 var options = {
-    order: [["fontsize"], "tester"]
-}
+    order: [["fontsize"], "tester"],
+    config: {
+      fontsize: {
+          init: 36,
+          min: 12,
+          max: 220,
+          step: 1,
+          unit: "px",
+          label: "Sizesess"
+        }
+    }
+};
+
 var demo = new Fontsampler(document.getElementById("demo"), fonts, options)
 FontsamplerSkin(demo)
 demo.init()
