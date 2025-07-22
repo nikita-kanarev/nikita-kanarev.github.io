@@ -5,7 +5,7 @@
   <title>Fontsampler + UI</title>
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
-  <link rel="stylesheet" href="assets/fontsampler-skin.css">
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
 </head>
 
 <body>
@@ -13,10 +13,10 @@
   <div id="demo">Text</div>
 
 <script>
-var fonts = [
+var fonts = [{
     "name": "My Font",
     "files": ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
-]
+}];
 var options = {
     order: [["fontsize", "lineheight", "letterspacing"], "tester"]
 }
@@ -29,3 +29,5 @@ demo.init()
 
 
 
+var options = {
+    order: [["fontsize", "lineheight", "letterspacing"], "tester"]
