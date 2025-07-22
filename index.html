@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Минимальный Fontsampler</title>
+  <title>Fontsampler + UI</title>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
 </head>
 <body>
 
-  <div id="demo">Demo minimal</div>
+  <div id="demo">Пример текста</div>
 
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script>
@@ -17,7 +17,10 @@
           files: ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
         }];
 
-    new Fontsampler(node, fonts).init();
+    new Fontsampler(node, fonts, {
+      ui: ["testString", "fontSize", "lineHeight", "letterSpacing"],
+      testString: "Съешь ещё этих мягких французских булок да выпей чаю",
+    }).init();
   </script>
 </body>
 </html>
