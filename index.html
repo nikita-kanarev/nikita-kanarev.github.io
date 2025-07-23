@@ -7,20 +7,67 @@
 </head>
 <body>
 
-  <div id="demo"></div>
+<div class="fontsampler" 
+     data-init="60" 
+     data-min="20" 
+     data-max="150" 
+     data-opentype="kern,liga">
+  Пример 1
+</div>
+
+<div class="fontsampler" 
+     data-init="30" 
+     data-min="10" 
+     data-max="100" 
+     data-opentype="liga,calt">
+  Пример 2
+</div>
+
+<div class="fontsampler" 
+     data-init="90" 
+     data-min="40" 
+     data-max="220" 
+     data-opentype="kern">
+  Пример 3
+</div>
+
 
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
-  <script>
-    const node = document.getElementById("demo");
-    const fonts = [{
-      name: "Archaism-Test",
-      files: ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
-    }];
+<script>
+const fontFiles = [{
+  name: "My Font",
+  files: ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
+}];
 
-    new Fontsampler(node, fonts, {
-      ui: ["testString", "fontSize", "lineHeight", "letterSpacing"],
-      testString: "Съешь ещё этих мягких французских булок"
-    }).init();
-  </script>
+document.querySelectorAll('.fontsampler').forEach((el) => {
+  const init = parseInt(el.dataset.init || 60);
+  const min = parseInt(el.dataset.min || 12);
+  const max = parseInt(el.dataset.max || 220);
+  const opentypeRaw = (el.dataset.opentype || "kern,liga").split(',');
+  const opentypeChoices = ["kern|Kerning", "liga|Ligatures", "calt|Contextual"];
+
+  const validChoices = opentypeChoices.filter(choice => {
+    const key = choice.split('|')[0];
+    return opentypeRaw.includes(key);
+  });
+
+  const options = {
+    order: [["fontsize", "opentype"], "tester"],
+    config: {
+      fontsize: { init, min, max, step: 1, unit: "px", label: "Size" },
+      opentype: {
+        choices: validChoices,
+        init: opentypeRaw,
+        label: "OpenType"
+      }
+    }
+  };
+
+  const sampler = new Fontsampler(el, fontFiles, options);
+  FontsamplerSkin(sampler);
+  sampler.init();
+});
+</script>
+
 </body>
 </html>
