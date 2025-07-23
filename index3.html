@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Fontsampler + UI</title>
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
+</head>
+
+<body>
+
+<div class="fontsampler" 
+     data-mode="readonly">
+  Просто пример
+</div>
+
+<!-- 2. Вариативный шрифт со всеми контролами -->
+<div class="fontsampler" 
+     data-init="60" 
+     data-min="20" 
+     data-max="150" 
+     data-opentype="kern,liga,calt"
+     data-variationaxis="wght,wdth">
+  Вариативный пример
+</div>
+
+<!-- 3–5. Только управление размером -->
+<div class="fontsampler" data-init="40" data-min="20" data-max="80">Пример 3</div>
+<div class="fontsampler" data-init="50" data-min="30" data-max="100">Пример 4</div>
+<div class="fontsampler" data-init="60" data-min="40" data-max="120">Пример 5</div>
+
+<script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+<script>
+const fontFiles = [{
+  name: "My Font",
+  files: ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
+}];
+
+document.querySelectorAll('.fontsampler').forEach((el) => {
+  const mode = el.dataset.mode || "default";
+
+  if (mode === "readonly") {
+    // Просто установить шрифт без интерфейса
+    const sampler = new Fontsampler(el, fontFiles, {
+      order: [],
+      config: {}
+    });
+    FontsamplerSkin(sampler);
+    sampler.init();
+    return;
+  }
+
+  const init = parseInt(el.dataset.init || 60);
+  const min = parseInt(el.dataset.min || 12);
+  const max = parseInt(el.dataset.max || 220);
+  const opentypeRaw = (el.dataset.opentype || "").split(',').filter(Boolean);
+  const axesRaw = (el.dataset.variationaxis || "").split(',').filter(Boolean);
+
+  const opentypeChoices = [
+    "kern|Kerning",
+    "liga|Ligatures",
+    "calt|Contextual"
+  ];
+  const validOpentype = opentypeChoices.filter(choice => {
+    const key = choice.split('|')[0];
+    return opentypeRaw.includes(key);
+  });
+
+  // Настройка variation-осей
+  const axisConfig = {};
+  const axisOrder = [];
+  axesRaw.forEach(axis => {
+    axisConfig[axis] = {
+      label: axis.toUpperCase(),
+      init: 400,
+      min: 100,
+      max: 900,
+      step: 1
+    };
+    axisOrder.push(axis);
+  });
+
+  const options = {
+    order: [ 
+      ...axisOrder.length ? [axisOrder] : [],
+      ...(opentypeRaw.length ? [["opentype"]] : []),
+      ...(min !== max ? [["fontsize"]] : []),
+      "tester"
+    ],
+    config: {
+      ...(axisOrder.length ? axisConfig : {}),
+      ...(opentypeRaw.length ? {
+        opentype: {
+          choices: validOpentype,
+          init: opentypeRaw,
+          label: "OpenType"
+        }
+      } : {}),
+      ...(min !== max ? {
+        fontsize: {
+          init, min, max, step: 1, unit: "px", label: "Size"
+        }
+      } : {})
+    }
+  };
+
+  const sampler = new Fontsampler(el, fontFiles, options);
+  FontsamplerSkin(sampler);
+  sampler.init();
+});
+</script>
+
+</body>
+</html>
