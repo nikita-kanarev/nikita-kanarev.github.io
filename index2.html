@@ -19,18 +19,16 @@ var fonts = [{
 }];
 
 var options = {
-    order: [["fontsize"], "tester"],
+    order: [["fontsize",, "opentype"], "tester"],
     config: {
-      fontsize: {
-          init: 36,
-          min: 12,
-          max: 220,
-          step: 1,
-          unit: "px",
-          label: "Sizesess"
-        }
+      fontsize: {init: 60, min: 12, max: 220, step: 1, unit: "px", label: ""},
+      opentype: {choices: ["kern|Kerning", "liga|Ligatures"],
+        init: ["kern", "liga"],
+        label: "OpenType"
+      }
     }
 };
+
 
 var demo = new Fontsampler(document.getElementById("demo"), fonts, options)
 FontsamplerSkin(demo)
@@ -38,8 +36,3 @@ demo.init()
 </script>
 </body>
 </html>
-
-
-
-var options = {
-    order: [["fontsize", "lineheight", "letterspacing"], "tester"]
