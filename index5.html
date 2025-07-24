@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Fontsampler + UI</title>
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
+</head>
+
+<body>
+
+<!-- Самплер 1 — readonly, фиксированные оси -->
+<div id="sampler1" data-mode="readonly" data-axes="wght:100,opsz:32">+ Readonly example!</div>
+
+<!-- Самплер 2 — полноценный UI -->
+<div id="sampler2">Variations example</div>
+
+<!-- Самплеры 3+ — только начертание и размер (данные приходят через CMS/Webflow) -->
+<div id="sampler3" data-axes="wght:500,opsz:14">Пример начертания 1</div>
+<div id="sampler4" data-axes="wght:900,opsz:14">Пример начертания 2</div>
+<div id="sampler5" data-axes="wght:550,opsz:24">Пример начертания 3</div>
+
+<script>
+const fontFiles = [{
+  name: "My Font",
+  files: ["https://nikita-kanarev.github.io/InterVariable.woff2"]
+}];
+
+// Упрощённый парсер осей из data-axes
+function parseAxes(string) {
+  const axes = {};
+  if (!string) return axes;
+  string.split(',').forEach(pair => {
+    const [key, val] = pair.split(':');
+    axes[key.trim()] = parseFloat(val);
+  });
+  return axes;
+}
+
+document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
+  const mode = el.dataset.mode || "default";
+  const axes = parseAxes(el.dataset.axes);
+
+  // READONLY sampler (фиксированные значения)
+  if (mode === "readonly") {
+    const sampler = new Fontsampler(el, fontFiles, {
+      order: [],
+      config: {}
+    });
+    FontsamplerSkin(sampler);
+    sampler.init();
+
+    sampler.setAxes(axes);
+    return;
+  }
+
+  // FULL UI для sampler2
+  if (el.id === "sampler2") {
+    const options = {
+      order: [["wght", "opsz"], ["opentype"], ["fontsize"], "tester"],
+      config: {
+        wght: { label: "Weight", init: 400, min: 100, max: 900, step: 1 },
+        opsz: { label: "Optical Size", init: 14, min: 8, max: 36, step: 1 },
+        opentype: {
+          label: "OpenType",
+          init: ["kern", "liga", "calt"],
+          choices: [
+            "kern|Kerning",
+            "liga|Ligatures",
+            "calt|Contextual Alternates"
+          ]
+        },
+        fontsize: { init: 60, min: 20, max: 150, step: 1, unit: "px", label: "Size" }
+      }
+    };
+    const sampler = new Fontsampler(el, fontFiles, options);
+    FontsamplerSkin(sampler);
+    sampler.init();
+    return;
+  }
+
+  // Остальные (3+) — без интерфейса, только задать начертание и размер
+  const sampler = new Fontsampler(el, fontFiles, {
+    order: [],
+    config: {}
+  });
+  FontsamplerSkin(sampler);
+  sampler.init();
+
+  sampler.setAxes(axes);
+});
+</script>
+
+</body>
+</html>
