@@ -25,69 +25,81 @@
 
 
 <!-- Сам скрипт -->
-<script src="https://unpkg.com/fontsampler-js"></script>
-<script>
-  const fontfiles = {
-    "MyFont": {
-      files: [
-        "https://nikita-kanarev.github.io/InterVariable.woff2"
-      ]
-    }
-  };
-
-  // Sampler 1 — простой, без UI
-  Fontsampler(document.getElementById("sampler1"), fontfiles, {
-    ui: [],
-    config: {
-      sampleText: "+ Readonly example!",
-      readonly: true
-    },
-    style: {
-      fontSize: "32px"
-    }
-  });
-
-  // Sampler 2 — с UI (оси, OpenType, размер, текст)
-  Fontsampler(document.getElementById("sampler2"), fontfiles, {
-    ui: ["axes", "opentype", "fontsize", "text"]
-  });
-
-  // Sampler 3 и далее — динамически через цикл
-  for (let i = 3; i <= 50; i++) {
-    const el = document.getElementById("sampler" + i);
-    if (!el) break; // выходим, если элемента больше нет
-
-    const axesData = el.dataset.axes || "";
-    const styleObj = {};
-
-    // Разбираем data-axes для установки font-variation-settings
-    axesData.split(",").forEach(axis => {
-      const [tag, value] = axis.trim().split(":");
-      if (tag && value) {
-        styleObj[`--${tag}`] = value;
+  <script>
+    // Описание шрифта
+    const fontFiles = [
+      {
+        name: "My Font",
+        files: [
+          "https://nikita-kanarev.github.io/Archaism-Test.woff2"
+        ]
       }
-    });
+    ];
 
-    // Вариативный стиль CSS
-    el.style.fontVariationSettings = axesData
-      .split(",")
-      .map(axis => {
-        const [tag, value] = axis.trim().split(":");
-        return `"${tag}" ${value}`;
-      })
-      .join(", ");
-
-    // Запускаем fontsampler без UI, только с fontSize
-    Fontsampler(el, fontfiles, {
-      ui: ["fontsize"], // Только размер
-      config: {
-        sampleText: el.innerText,
-        readonly: true
+    // 1. sampler1 — readonly
+    new Fontsampler(
+      document.getElementById("sampler1"),
+      fontFiles,
+      {
+        ui: [],          // без контролов
+        config: {
+          readonly: true,
+          sampleText: document.getElementById("sampler1").innerText
+        },
+        style: {
+          // сразу фиксируем начертание opsz и wght из data-axes
+          fontVariationSettings: 
+            document.getElementById("sampler1")
+              .dataset.axes
+              .split(",")
+              .map(a => {
+                const [tag, val] = a.split(":");
+                return `"${tag.trim()}" ${val.trim()}`;
+              })
+              .join(", ")
+        }
       }
-    });
-  }
-</script>
+    );
 
+    // 2. sampler2 — полный UI (оси, opentype, размер, текст)
+    new Fontsampler(
+      document.getElementById("sampler2"),
+      fontFiles,
+      {
+        ui: ["axes", "opentype", "fontsize", "text"]
+      }
+    );
+
+    // 3+ — только размер, но фиксированные точки осей из data-axes
+    for (let i = 3; ; i++) {
+      const el = document.getElementById("sampler" + i);
+      if (!el) break;
+
+      // подготовим fontVariationSettings из data-axes
+      const fvs = el.dataset.axes
+        .split(",")
+        .map(a => {
+          const [tag, val] = a.split(":");
+          return `"${tag.trim()}" ${val.trim()}`;
+        })
+        .join(", ");
+
+      new Fontsampler(
+        el,
+        fontFiles,
+        {
+          ui: ["fontsize"],
+          config: {
+            readonly: true,
+            sampleText: el.innerText
+          },
+          style: {
+            fontVariationSettings: fvs
+          }
+        }
+      );
+    }
+  </script>
 
 </body>
 </html>
