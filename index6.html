@@ -74,7 +74,7 @@ document.querySelectorAll('[id^="sampler"]').forEach((el) => {
             "calt|Contextual Alternates"
           ]
         },
-        fontsize: { init: 60, min: 20, max: 150, step: 1, unit: "px", label: "Size" }
+        fontsize: { init: 160, min: 20, max: 350, step: 1, unit: "px", label: "Size" }
       }
     });
     FontsamplerSkin(sampler);
@@ -84,10 +84,11 @@ document.querySelectorAll('[id^="sampler"]').forEach((el) => {
 
   // Самплеры 3+ — тихий режим (только стили из data-axes)
   const sampler = new Fontsampler(el, fontFiles, {
-    order: [],
+    order: [["fontsize"]],
     config: {
       wght: { init: axes.wght || 400 },
-      opsz: { init: axes.opsz || 14 }
+      opsz: { init: axes.opsz || 14 },
+      fontsize: { init: 100, min: 20, max: 350, step: 1, unit: "px", label: "Size" }
     }
   });
   FontsamplerSkin(sampler);
