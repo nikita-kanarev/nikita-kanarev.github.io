@@ -49,7 +49,10 @@ document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
   if (mode === "readonly") {
     const sampler = new Fontsampler(el, fontFiles, {
       order: [],
-      config: {}
+      config: {
+        wght: { init: 100 },
+        opsz: { init: 14 },
+      }
     });
     FontsamplerSkin(sampler);
     sampler.init();
@@ -64,7 +67,7 @@ document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
         wght: { label: "Weight", init: 400, min: 100, max: 900, step: 1 },
         opsz: { label: "Optical Size", init: 14, min: 8, max: 36, step: 1 },
         opentype: {
-          label: "OpenType",
+          label: "",
           init: ["kern", "liga", "calt"],
           choices: [
             "kern|Kerning",
