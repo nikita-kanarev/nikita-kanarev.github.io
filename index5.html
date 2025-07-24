@@ -41,6 +41,14 @@ function parseAxes(string) {
   return axes;
 }
 
+const axesString = el.getAttribute("data-axes"); // получаем строку из атрибута
+const axes = parseAxes(axesString);              // парсим в объект
+
+const v_wght = axes.wght || 0;  // извлекаем числовое значение или 0
+const v_opsz = axes.opsz || 0;
+
+
+
 document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
   const mode = el.dataset.mode || "default";
   const axes = parseAxes(el.dataset.axes);
@@ -87,12 +95,15 @@ document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
   // Остальные (3+) — без интерфейса, только задать начертание и размер
   const sampler = new Fontsampler(el, fontFiles, {
     order: [],
-    config: {}
+    config: {
+        wght: { init: v_wght },
+        opsz: { init: v_opsz },
+    }
   });
   FontsamplerSkin(sampler);
   sampler.init();
 
-  sampler.setAxes(axes);
+  
 });
 </script>
 
