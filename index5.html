@@ -51,7 +51,9 @@ document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
     FontsamplerSkin(sampler);
     sampler.init();
 
-    sampler.setAxes(axes);
+    for (const axis in axes) {
+    sampler.set(axis, axes[axis]);
+    }
     return;
   }
 
