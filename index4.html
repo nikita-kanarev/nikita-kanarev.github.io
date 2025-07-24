@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Fontsampler + UI</title>
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
+</head>
+
+<body>
+
+
+<div id="sampler1" data-axes="wght:100,opsz:32">+ Readonly example!</div>
+
+<!-- Самплер 2 — полноценный вариативный UI -->
+<div id="sampler2">Variations example</div>
+
+<!-- Самплеры 3+ — неизвестное количество, только начертание + размер -->
+<!-- Эти div создаются вручную или CMS (в Webflow — Collection List) -->
+<div id="sampler3" data-axes="wght:500,opsz:14">Пример начертания 1</div>
+<div id="sampler4" data-axes="wght:900,opsz:14">Пример начертания 2</div>
+<div id="sampler5" data-axes="wght:550,opsz:24">Пример начертания 3</div>
+
+
+
+<!-- Сам скрипт -->
+<script src="https://unpkg.com/fontsampler-js"></script>
+<script>
+  const fontfiles = {
+    "MyFont": {
+      files: [
+        "https://nikita-kanarev.github.io/InterVariable.woff2"
+      ]
+    }
+  };
+
+  // Sampler 1 — простой, без UI
+  Fontsampler(document.getElementById("sampler1"), fontfiles, {
+    ui: [],
+    config: {
+      sampleText: "+ Readonly example!",
+      readonly: true
+    },
+    style: {
+      fontSize: "32px"
+    }
+  });
+
+  // Sampler 2 — с UI (оси, OpenType, размер, текст)
+  Fontsampler(document.getElementById("sampler2"), fontfiles, {
+    ui: ["axes", "opentype", "fontsize", "text"]
+  });
+
+  // Sampler 3 и далее — динамически через цикл
+  for (let i = 3; i <= 50; i++) {
+    const el = document.getElementById("sampler" + i);
+    if (!el) break; // выходим, если элемента больше нет
+
+    const axesData = el.dataset.axes || "";
+    const styleObj = {};
+
+    // Разбираем data-axes для установки font-variation-settings
+    axesData.split(",").forEach(axis => {
+      const [tag, value] = axis.trim().split(":");
+      if (tag && value) {
+        styleObj[`--${tag}`] = value;
+      }
+    });
+
+    // Вариативный стиль CSS
+    el.style.fontVariationSettings = axesData
+      .split(",")
+      .map(axis => {
+        const [tag, value] = axis.trim().split(":");
+        return `"${tag}" ${value}`;
+      })
+      .join(", ");
+
+    // Запускаем fontsampler без UI, только с fontSize
+    Fontsampler(el, fontfiles, {
+      ui: ["fontsize"], // Только размер
+      config: {
+        sampleText: el.innerText,
+        readonly: true
+      }
+    });
+  }
+</script>
+
+
+</body>
+</html>
