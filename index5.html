@@ -21,6 +21,9 @@
 <div id="sampler4" data-axes="wght:900,opsz:14">Пример начертания 2</div>
 <div id="sampler5" data-axes="wght:550,opsz:24">Пример начертания 3</div>
 
+<!-- SCRIPT -->
+
+<script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
 <script>
 const fontFiles = [{
   name: "My Font",
@@ -50,10 +53,6 @@ document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
     });
     FontsamplerSkin(sampler);
     sampler.init();
-
-    for (const axis in axes) {
-    sampler.set(axis, axes[axis]);
-    }
     return;
   }
 
