@@ -2,70 +2,210 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Fontsampler с UI</title>
+  <title>Fontsampler + UI</title>
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
+  <style>
+    /* Принудительно устанавливаем размер для демонстрации шрифта */
+    #TypeName .fsjs-block-tester {
+      font-size: 200px !important;
+    }
+    
+    /* Делаем текст строго в одну строчку ТОЛЬКО для sampler3 и далее */
+    [id^="sampler"]:not([id$="1"]):not([id$="2"]) .fsjs-block-tester {
+      white-space: nowrap !important;      /* Запрещаем перенос строк */
+      overflow: hidden !important;         /* Скрываем переполнение */
+      text-overflow: ellipsis !important;  /* Добавляем многоточие при обрезке */
+      display: block !important;           /* Блочный элемент */
+      width: 100% !important;              /* Полная ширина контейнера */
+    }
+  </style>
 </head>
 <body>
 
-<div class="fontsampler" 
-     data-init="60" 
-     data-min="20" 
-     data-max="150" 
-     data-opentype="kern,liga">
-  Пример 1
-</div>
+<!-- Самплер 1 — readonly, фиксированные оси -->
+<div id="sampler1" 
+     data-mode="readonly" 
+     data-axes="wght:100,opsz:32">10v+ Readonly example!</div>
 
-<div class="fontsampler" 
-     data-init="30" 
-     data-min="10" 
-     data-max="100" 
-     data-opentype="liga,calt">
-  Пример 2
-</div>
+<!-- Самплер 2 — полный UI с настройкой через data-атрибуты -->
+<div id="sampler2" 
+     data-mode="tester"
+     data-fontsize-init="160"
+     data-fontsize-min="20"
+     data-fontsize-max="500"
+     data-fontsize-step="1"
+     data-fontsize-unit="px"
+     data-fontsize-label="Size"
+     data-wght-init="400"
+     data-wght-min="100"
+     data-wght-max="900"
+     data-wght-step="1"
+     data-wght-label="Weight"
+     data-opsz-init="14"
+     data-opsz-min="8"
+     data-opsz-max="36"
+     data-opsz-step="1"
+     data-opsz-label="Optical Size"
+     data-opentype-init="kern,liga,calt"
+     data-opentype-choices="kern|Kerning,liga|Ligatures,calt|Contextual Alternates"
+     data-order="wght,opsz|fontsize|opentype|tester">Variations example</div>
 
-<div class="fontsampler" 
-     data-init="90" 
-     data-min="40" 
-     data-max="220" 
-     data-opentype="kern">
-  Пример 3
-</div>
+<!-- Самплеры 3+ — только начертание и размер (данные приходят через CMS/Webflow) -->
+<div id="sampler3" data-axes="wght:500,opsz:14">Пример начертания 1</div>
+<div id="sampler4" data-axes="wght:900,opsz:14">Snøen glemmer ingenting.</div>
+<div id="sampler5" data-axes="wght:550,opsz:24">Пример начертания 3</div>
 
-
-  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
 <script>
 const fontFiles = [{
   name: "My Font",
-  files: ["https://nikita-kanarev.github.io/Archaism-Test.woff2"]
+  files: ["https://nikita-kanarev.github.io/InterVariable.woff2"]
 }];
 
-document.querySelectorAll('.fontsampler').forEach((el) => {
-  const init = parseInt(el.dataset.init || 60);
-  const min = parseInt(el.dataset.min || 12);
-  const max = parseInt(el.dataset.max || 220);
-  const opentypeRaw = (el.dataset.opentype || "kern,liga").split(',');
-  const opentypeChoices = ["kern|Kerning", "liga|Ligatures", "calt|Contextual"];
-
-  const validChoices = opentypeChoices.filter(choice => {
-    const key = choice.split('|')[0];
-    return opentypeRaw.includes(key);
+// Парсинг data-axes="wght:500,opsz:14" → { wght: 500, opsz: 14 }
+function parseAxes(string) {
+  const axes = {};
+  if (!string) return axes;
+  string.split(',').forEach(pair => {
+    const [key, val] = pair.split(':');
+    axes[key.trim()] = parseFloat(val);
   });
+  return axes;
+}
 
-  const options = {
-    order: [["fontsize", "opentype"], "tester"],
+// Парсинг order из data-order="wght,opsz|fontsize|opentype|tester"
+function parseOrder(string) {
+  if (!string) return [["wght", "opsz"], ["fontsize"], ["opentype"], "tester"];
+  
+  return string.split('|').map(group => {
+    if (group.includes(',')) {
+      return group.split(',').map(item => item.trim());
+    }
+    return group.trim();
+  });
+}
+
+// Получение параметра из data-атрибутов с fallback значением
+function getDataParam(el, param, fallback) {
+  const value = el.dataset[param];
+  if (value === undefined) return fallback;
+  
+  // Попытка парсинга как число
+  const num = parseFloat(value);
+  if (!isNaN(num)) return num;
+  
+  // Возвращаем строку как есть
+  return value;
+}
+
+// Построение конфига для параметра из data-атрибутов
+function buildParamConfig(el, paramName, defaults = {}) {
+  const config = {};
+  
+  // Список возможных свойств параметра
+  const properties = ['init', 'min', 'max', 'step', 'unit', 'label', 'choices'];
+  
+  properties.forEach(prop => {
+    const dataKey = `${paramName}${prop.charAt(0).toUpperCase() + prop.slice(1)}`;
+    const value = el.dataset[dataKey];
+    
+    if (value !== undefined) {
+      if (prop === 'choices' || prop === 'init' && paramName === 'opentype') {
+        // Для choices и opentype init - парсим как массив
+        config[prop] = value.split(',').map(item => item.trim());
+      } else {
+        // Для остальных - пытаемся парсить как число, иначе строка
+        const num = parseFloat(value);
+        config[prop] = !isNaN(num) ? num : value;
+      }
+    } else if (defaults[prop] !== undefined) {
+      config[prop] = defaults[prop];
+    }
+  });
+  
+  return Object.keys(config).length > 0 ? config : defaults;
+}
+
+// Главный цикл по всем элементам
+document.querySelectorAll('[id^="sampler"], #TypeName, #Var_sampler').forEach((el) => {
+  const mode = el.dataset.mode || "default";
+  const axes = parseAxes(el.dataset.axes);
+  
+  // Демонстрация шрифта — readonly
+  if (mode === "readonly") {
+    const sampler = new Fontsampler(el, fontFiles, {
+      order: [],
+      config: {
+          fontsize: { 
+              init: getDataParam(el, 'fontsizeInit', 200),
+              min: getDataParam(el, 'fontsizeMin', 20),
+              max: getDataParam(el, 'fontsizeMax', 500),
+              unit: getDataParam(el, 'fontsizeUnit', "px")
+          },
+          wght: { init: axes.wght || getDataParam(el, 'wghtInit', 200) },
+          opsz: { init: axes.opsz || getDataParam(el, 'opszInit', 14) },
+          tester: {
+              editable: false,
+              label: false
+          }
+      }
+    });
+    sampler.init();
+    return;
+  }
+
+  // Тестер вариативного шрифта — полный UI с настройкой через data-атрибуты
+  if (mode === "tester") {
+    const order = parseOrder(el.dataset.order);
+    
+    const config = {
+      wght: buildParamConfig(el, 'wght', { 
+        label: "Weight", init: 400, min: 100, max: 900, step: 1 
+      }),
+      opsz: buildParamConfig(el, 'opsz', { 
+        label: "Optical Size", init: 14, min: 8, max: 36, step: 1 
+      }),
+      fontsize: buildParamConfig(el, 'fontsize', { 
+        init: 160, min: 20, max: 500, step: 1, unit: "px", label: "Size" 
+      }),
+      opentype: buildParamConfig(el, 'opentype', {
+        label: "",
+        init: ["kern", "liga", "calt"],
+        choices: [
+          "kern|Kerning",
+          "liga|Ligatures", 
+          "calt|Contextual Alternates"
+        ]
+      })
+    };
+    
+    const sampler = new Fontsampler(el, fontFiles, {
+      order: order,
+      config: config
+    });
+    FontsamplerSkin(sampler);
+    sampler.init();
+    return;
+  }
+  
+  // Самплеры — тихий режим (только стили из data-axes)
+  const sampler = new Fontsampler(el, fontFiles, {
+    multiline: false,    // Однострочный ввод для самплеров
+    order: [["fontsize"]],
     config: {
-      fontsize: { init, min, max, step: 1, unit: "px", label: "Size" },
-      opentype: {
-        choices: validChoices,
-        init: opentypeRaw,
-        label: "OpenType"
+      wght: { init: axes.wght || 400 },
+      opsz: { init: axes.opsz || 14 },
+      fontsize: { 
+        init: getDataParam(el, 'fontsizeInit', 200),
+        min: getDataParam(el, 'fontsizeMin', 20), 
+        max: getDataParam(el, 'fontsizeMax', 500),
+        step: getDataParam(el, 'fontsizeStep', 1), 
+        unit: getDataParam(el, 'fontsizeUnit', "px"), 
+        label: getDataParam(el, 'fontsizeLabel', "Size")
       }
     }
-  };
-
-  const sampler = new Fontsampler(el, fontFiles, options);
+  });
   FontsamplerSkin(sampler);
   sampler.init();
 });
