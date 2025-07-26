@@ -8,29 +8,22 @@
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
   <style>
     /* Принудительно устанавливаем размер для демонстрации шрифта */
-    #font-display .fsjs-block-tester {
-      font-size: 400px !important;
-    }
-    
-    /* Увеличиваем размер для всех самплеров */
-    [id^="sampler"] .fsjs-block-tester {
+    #TypeName .fsjs-block-tester {
       font-size: 200px !important;
     }
     
-    /* Делаем текст строго в одну строчку ТОЛЬКО для самплеров (не для font-tester) */
-    [id^="sampler"] .fsjs-block-tester {
+    /* Более универсальный селектор для sampler3+ */
+    [id^="sampler"]:not([id$="1"]):not([id$="2"]) .fsjs-block-tester {
+      font-size: 200px !important;
+    }
+    
+    /* Делаем текст строго в одну строчку ТОЛЬКО для sampler3 и далее */
+    [id^="sampler"]:not([id$="1"]):not([id$="2"]) .fsjs-block-tester {
       white-space: nowrap !important;      /* Запрещаем перенос строк */
       overflow: hidden !important;         /* Скрываем переполнение */
       text-overflow: ellipsis !important;  /* Добавляем многоточие при обрезке */
       display: block !important;           /* Блочный элемент */
       width: 100% !important;              /* Полная ширина контейнера */
-    }
-    
-    /* Для font-tester разрешаем многострочность */
-    #font-tester .fsjs-block-tester {
-      white-space: normal !important;      /* Разрешаем перенос строк */
-      overflow: visible !important;        /* Показываем весь текст */
-      text-overflow: initial !important;   /* Убираем многоточие */
     }
   </style>
 </head>
@@ -62,7 +55,7 @@ function parseAxes(string) {
 }
 
 // Главный цикл по всем элементам
-document.querySelectorAll('[id^="sampler"], #font-display, #font-tester').forEach((el) => {
+document.querySelectorAll('[id^="sampler"], #TypeName, #Var_sampler').forEach((el) => {
   const mode = el.dataset.mode || "default";
   const axes = parseAxes(el.dataset.axes);
 
@@ -72,7 +65,7 @@ document.querySelectorAll('[id^="sampler"], #font-display, #font-tester').forEac
       order: [],
       config: {
           fontsize: { 
-              init: 400,      // Желаемый размер
+              init: 200,      // Желаемый размер
               min: 20,        // Минимум
               max: 500,       // ВАЖНО: увеличиваем максимум
               unit: "px"      // Единицы измерения
