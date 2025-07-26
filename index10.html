@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Fontsampler + UI</title>
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
+  <style>
+    /* Принудительно устанавливаем размер для демонстрации шрифта */
+    #font-display .fsjs-block-tester {
+      font-size: 200px !important;
+    }
+    
+    /* Делаем текст строго в одну строчку для всех самплеров */
+    [id^="sampler"] .fsjs-block-tester {
+      white-space: nowrap !important;      /* Запрещаем перенос строк */
+      overflow: hidden !important;         /* Скрываем переполнение */
+      text-overflow: ellipsis !important;  /* Добавляем многоточие при обрезке */
+      display: block !important;           /* Блочный элемент */
+      width: 100% !important;              /* Полная ширина контейнера */
+    }
+  </style>
+</head>
+<body>
+<!-- Самплер 1 — readonly, фиксированные оси -->
+<div id="sampler1" data-mode="readonly" data-axes="wght:100,opsz:32">TypeFaceName!!!</div>
+<!-- Самплер 2 — полный UI -->
+<div id="sampler2">Variations example</div>
+<!-- Самплеры 3+ — только начертание и размер (данные приходят через CMS/Webflow) -->
+<div id="sampler3" data-axes="wght:500,opsz:14">Пример начертания 1</div>
+<div id="sampler4" data-axes="wght:900,opsz:14">Пример начертания 2</div>
+<div id="sampler5" data-axes="wght:550,opsz:24">Пример начертания 3</div>
+
+<script>
+const fontFiles = [{
+  name: "My Font",
+  files: ["https://nikita-kanarev.github.io/InterVariable.woff2"]
+}];
+
+// Парсинг data-axes="wght:500,opsz:14" → { wght: 500, opsz: 14 }
+function parseAxes(string) {
+  const axes = {};
+  if (!string) return axes;
+  string.split(',').forEach(pair => {
+    const [key, val] = pair.split(':');
+    axes[key.trim()] = parseFloat(val);
+  });
+  return axes;
+}
+
+// Главный цикл по всем элементам
+document.querySelectorAll('[id^="sampler"], #font-display, #font-tester').forEach((el) => {
+  const mode = el.dataset.mode || "default";
+  const axes = parseAxes(el.dataset.axes);
+
+  // Демонстрация шрифта — readonly
+  if (mode === "readonly") {
+    const sampler = new Fontsampler(el, fontFiles, {
+      order: [],
+      config: {
+          fontsize: { 
+              init: 200,      // Желаемый размер
+              min: 20,        // Минимум
+              max: 500,       // ВАЖНО: увеличиваем максимум
+              unit: "px"      // Единицы измерения
+          },
+          wght: { init: axes.wght || 200 },
+          opsz: { init: axes.opsz || 14 },
+          tester: {
+              editable: false,
+              label: false
+          }
+      }
+    });
+    sampler.init();
+    return;
+  }
+
+  // Тестер вариативного шрифта — полный UI
+  if (el.id === "font-tester") {
+    const sampler = new Fontsampler(el, fontFiles, {
+      order: [["wght", "opsz"], ["opentype"], ["fontsize"], "tester"],
+      config: {
+        wght: { label: "Weight", init: 400, min: 100, max: 900, step: 1 },
+        opsz: { label: "Optical Size", init: 14, min: 8, max: 36, step: 1 },
+        opentype: {
+          label: "",
+          init: ["kern", "liga", "calt"],
+          choices: [
+            "kern|Kerning",
+            "liga|Ligatures",
+            "calt|Contextual Alternates"
+          ]
+        },
+        fontsize: { init: 160, min: 20, max: 500, step: 1, unit: "px", label: "Size" }
+      }
+    });
+    FontsamplerSkin(sampler);
+    sampler.init();
+    return;
+  }
+
+  // Самплеры — тихий режим (только стили из data-axes)
+  const sampler = new Fontsampler(el, fontFiles, {
+    multiline: false,    // Однострочный ввод для самплеров
+    order: [["fontsize"]],
+    config: {
+      wght: { init: axes.wght || 400 },
+      opsz: { init: axes.opsz || 14 },
+      fontsize: { 
+        init: 200,        // Увеличил размер для самплеров
+        min: 20, 
+        max: 500,         // Увеличил максимум
+        step: 1, 
+        unit: "px", 
+        label: "Size" 
+      }
+    }
+  });
+  FontsamplerSkin(sampler);
+  sampler.init();
+});
+</script>
+</body>
+</html>
