@@ -12,6 +12,17 @@
       font-size: 200px !important;
     }
 
+    /* Делаем текст строго в одну строчку для самплеров 3+ */
+    #sampler3 .fsjs-block-tester,
+    #sampler4 .fsjs-block-tester,
+    #sampler5 .fsjs-block-tester {
+      white-space: nowrap !important;      /* Запрещаем перенос строк */
+      overflow: hidden !important;         /* Скрываем переполнение */
+      text-overflow: ellipsis !important;  /* Добавляем многоточие при обрезке */
+      display: block !important;           /* Блочный элемент */
+      width: 100% !important;              /* Полная ширина контейнера */
+    }
+    
   </style>
 </head>
 <body>
