@@ -12,11 +12,6 @@
       font-size: 200px !important;
     }
     
-    /* Более универсальный селектор для sampler3+ */
-    [id^="sampler"]:not([id$="1"]):not([id$="2"]) .fsjs-block-tester {
-      font-size: 200px !important;
-    }
-    
     /* Делаем текст строго в одну строчку ТОЛЬКО для sampler3 и далее */
     [id^="sampler"]:not([id$="1"]):not([id$="2"]) .fsjs-block-tester {
       white-space: nowrap !important;      /* Запрещаем перенос строк */
@@ -31,7 +26,7 @@
 <!-- Самплер 1 — readonly, фиксированные оси -->
 <div id="sampler1" data-mode="readonly" data-axes="wght:100,opsz:32">+ Readonly example!</div>
 <!-- Самплер 2 — полный UI -->
-<div id="sampler2">Variations example</div>
+<div id="sampler2" data-mode="tester">Variations example</div>
 <!-- Самплеры 3+ — только начертание и размер (данные приходят через CMS/Webflow) -->
 <div id="sampler3" data-axes="wght:500,opsz:14">Пример начертания 1</div>
 <div id="sampler4" data-axes="wght:900,opsz:14">Пример начертания 2</div>
