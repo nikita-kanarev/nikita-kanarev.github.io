@@ -9,9 +9,9 @@
   <style>
     /* Принудительно устанавливаем размер для первого самплера */
     #sampler1 .fsjs-block-tester {
-      font-size: 400px !important;
+      font-size: 200px !important;
     }
-    
+
   </style>
 </head>
 <body>
@@ -85,7 +85,7 @@ document.querySelectorAll('[id^="sampler"]').forEach((el) => {
             "calt|Contextual Alternates"
           ]
         },
-        fontsize: { init: 160, min: 20, max: 500, step: 1, unit: "px", label: "Size" }
+        fontsize: { init: 100, min: 20, max: 500, step: 1, unit: "px", label: "Size" }
       }
     });
     FontsamplerSkin(sampler);
@@ -95,12 +95,13 @@ document.querySelectorAll('[id^="sampler"]').forEach((el) => {
 
   // Самплеры 3+ — тихий режим (только стили из data-axes)
   const sampler = new Fontsampler(el, fontFiles, {
+    multiline: false,    // Однострочный ввод для самплеров 3+
     order: [["fontsize"]],
     config: {
       wght: { init: axes.wght || 400 },
       opsz: { init: axes.opsz || 14 },
       fontsize: { 
-        init: 200,        // Увеличил размер для самплеров 3+
+        init: 260,        // Увеличил размер для самплеров 3+
         min: 20, 
         max: 500,         // Увеличил максимум
         step: 1, 
