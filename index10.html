@@ -90,7 +90,7 @@ document.querySelectorAll('[id^="sampler"], #font-display, #font-tester').forEac
   }
 
   // Тестер вариативного шрифта — полный UI
-  if (el.id === "font-tester") {
+  if (mode === "tester") {
     const sampler = new Fontsampler(el, fontFiles, {
       order: [["wght", "opsz"], ["opentype"], ["fontsize"], "tester"],
       config: {
