@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Fontsampler + UI</title>
+  <title>Fontsampler + UI - Dynamic Axes</title>
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
@@ -14,11 +14,11 @@
     
     /* Делаем текст строго в одну строчку ТОЛЬКО для sampler3 и далее */
     [id^="sampler"]:not([id$="1"]):not([id$="2"]) .fsjs-block-tester {
-      white-space: nowrap !important;      /* Запрещаем перенос строк */
-      overflow: hidden !important;         /* Скрываем переполнение */
-      text-overflow: ellipsis !important;  /* Добавляем многоточие при обрезке */
-      display: block !important;           /* Блочный элемент */
-      width: 100% !important;              /* Полная ширина контейнера */
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      display: block !important;
+      width: 100% !important;
     }
   </style>
 </head>
@@ -27,34 +27,29 @@
 <!-- Самплер 1 — readonly, фиксированные оси -->
 <div id="sampler1" 
      data-mode="readonly" 
-     data-axes="wght:100,opsz:32">10v+ Readonly example!</div>
+     data-axes="wght:100,opsz:32">1Readonlyexamples!</div>
 
-<!-- Самплер 2 — полный UI с настройкой через data-атрибуты -->
+<!-- Самплер 2 — полный UI с динамическими осями -->
 <div id="sampler2" 
      data-mode="tester"
+     data-variable-axes="wght:100:900:1:Weight,opsz:8:36:1:Optical Size,slnt:-15:0:1:Slant"
+     data-opentype-features="kern:Kerning:true,liga:Ligatures:true,calt:Contextual Alternates:true,ss01:Stylistic Set 1:false,ss02:Stylistic Set 2:false"
      data-fontsize-init="160"
      data-fontsize-min="20"
      data-fontsize-max="500"
-     data-fontsize-step="1"
-     data-fontsize-unit="px"
-     data-fontsize-label="Size"
-     data-wght-init="400"
-     data-wght-min="100"
-     data-wght-max="900"
-     data-wght-step="1"
-     data-wght-label="Weight"
-     data-opsz-init="14"
-     data-opsz-min="8"
-     data-opsz-max="36"
-     data-opsz-step="1"
-     data-opsz-label="Optical Size"
-     data-opentype-init="kern,liga,calt"
-     data-opentype-choices="kern|Kerning,liga|Ligatures,calt|Contextual Alternates"
-     data-order="wght,opsz|fontsize|opentype|tester">Variations example</div>
+     data-order="wght,opsz,slnt|fontsize|opentype|tester">Variations example with dynamic axes</div>
 
-<!-- Самплеры 3+ — только начертание и размер (данные приходят через CMS/Webflow) -->
+<!-- Пример с другим набором осей -->
+<div id="sampler_custom" 
+     data-mode="tester"
+     data-variable-axes="wght:300:800:10:Font Weight,wdth:75:125:5:Width,ital:0:1:1:Italic"
+     data-opentype-features="kern:Kerning:true,liga:Ligatures:false,dlig:Discretionary Ligatures:false"
+     data-fontsize-init="120"
+     data-order="wght,wdth|ital|fontsize|opentype|tester">Custom axes example</div>
+
+<!-- Самплеры 3+ — только начертание и размер -->  
 <div id="sampler3" data-axes="wght:500,opsz:14">Пример начертания 1</div>
-<div id="sampler4" data-axes="wght:900,opsz:14">Snøen glemmer ingenting.</div>
+<div id="sampler4" data-axes="wght:900,opsz:14">Пример начертания 2</div>
 <div id="sampler5" data-axes="wght:550,opsz:24">Пример начертания 3</div>
 
 <script>
@@ -74,9 +69,58 @@ function parseAxes(string) {
   return axes;
 }
 
+// Парсинг переменных осей: "wght:100:900:1:Weight,opsz:8:36:1:Optical Size"
+function parseVariableAxes(string) {
+  const axes = {};
+  if (!string) return axes;
+  
+  string.split(',').forEach(axisData => {
+    const parts = axisData.split(':');
+    if (parts.length >= 4) {
+      const [tag, min, max, step, ...labelParts] = parts;
+      axes[tag.trim()] = {
+        min: parseFloat(min),
+        max: parseFloat(max), 
+        step: parseFloat(step),
+        init: parseFloat(min) + (parseFloat(max) - parseFloat(min)) / 2, // Среднее значение по умолчанию
+        label: labelParts.join(':') || tag.trim()
+      };
+    }
+  });
+  return axes;
+}
+
+// Парсинг OpenType функций: "kern:Kerning:true,liga:Ligatures:false"
+function parseOpenTypeFeatures(string) {
+  const features = {
+    label: "",
+    init: [],
+    choices: []
+  };
+  
+  if (!string) return features;
+  
+  string.split(',').forEach(featureData => {
+    const parts = featureData.split(':');
+    if (parts.length >= 3) {
+      const [tag, label, defaultActive] = parts;
+      const tagTrimmed = tag.trim();
+      const labelTrimmed = label.trim();
+      const isActive = defaultActive.trim().toLowerCase() === 'true';
+      
+      features.choices.push(`${tagTrimmed}|${labelTrimmed}`);
+      if (isActive) {
+        features.init.push(tagTrimmed);
+      }
+    }
+  });
+  
+  return features;
+}
+
 // Парсинг order из data-order="wght,opsz|fontsize|opentype|tester"
 function parseOrder(string) {
-  if (!string) return [["wght", "opsz"], ["fontsize"], ["opentype"], "tester"];
+  if (!string) return [["fontsize"], "tester"];
   
   return string.split('|').map(group => {
     if (group.includes(',')) {
@@ -91,34 +135,24 @@ function getDataParam(el, param, fallback) {
   const value = el.dataset[param];
   if (value === undefined) return fallback;
   
-  // Попытка парсинга как число
   const num = parseFloat(value);
   if (!isNaN(num)) return num;
   
-  // Возвращаем строку как есть
   return value;
 }
 
-// Построение конфига для параметра из data-атрибутов
+// Построение конфига для обычного параметра
 function buildParamConfig(el, paramName, defaults = {}) {
   const config = {};
-  
-  // Список возможных свойств параметра
-  const properties = ['init', 'min', 'max', 'step', 'unit', 'label', 'choices'];
+  const properties = ['init', 'min', 'max', 'step', 'unit', 'label'];
   
   properties.forEach(prop => {
     const dataKey = `${paramName}${prop.charAt(0).toUpperCase() + prop.slice(1)}`;
     const value = el.dataset[dataKey];
     
     if (value !== undefined) {
-      if (prop === 'choices' || prop === 'init' && paramName === 'opentype') {
-        // Для choices и opentype init - парсим как массив
-        config[prop] = value.split(',').map(item => item.trim());
-      } else {
-        // Для остальных - пытаемся парсить как число, иначе строка
-        const num = parseFloat(value);
-        config[prop] = !isNaN(num) ? num : value;
-      }
+      const num = parseFloat(value);
+      config[prop] = !isNaN(num) ? num : value;
     } else if (defaults[prop] !== undefined) {
       config[prop] = defaults[prop];
     }
@@ -155,30 +189,28 @@ document.querySelectorAll('[id^="sampler"], #TypeName, #Var_sampler').forEach((e
     return;
   }
 
-  // Тестер вариативного шрифта — полный UI с настройкой через data-атрибуты
+  // Тестер вариативного шрифта — динамический UI
   if (mode === "tester") {
     const order = parseOrder(el.dataset.order);
+    const variableAxes = parseVariableAxes(el.dataset.variableAxes);
+    const openTypeFeatures = parseOpenTypeFeatures(el.dataset.opentypeFeatures);
     
+    // Начинаем с базового конфига
     const config = {
-      wght: buildParamConfig(el, 'wght', { 
-        label: "Weight", init: 400, min: 100, max: 900, step: 1 
-      }),
-      opsz: buildParamConfig(el, 'opsz', { 
-        label: "Optical Size", init: 14, min: 8, max: 36, step: 1 
-      }),
       fontsize: buildParamConfig(el, 'fontsize', { 
         init: 160, min: 20, max: 500, step: 1, unit: "px", label: "Size" 
-      }),
-      opentype: buildParamConfig(el, 'opentype', {
-        label: "",
-        init: ["kern", "liga", "calt"],
-        choices: [
-          "kern|Kerning",
-          "liga|Ligatures", 
-          "calt|Contextual Alternates"
-        ]
       })
     };
+    
+    // Добавляем динамические оси
+    Object.keys(variableAxes).forEach(axisTag => {
+      config[axisTag] = variableAxes[axisTag];
+    });
+    
+    // Добавляем OpenType функции, если они есть
+    if (openTypeFeatures.choices.length > 0) {
+      config.opentype = openTypeFeatures;
+    }
     
     const sampler = new Fontsampler(el, fontFiles, {
       order: order,
@@ -191,7 +223,7 @@ document.querySelectorAll('[id^="sampler"], #TypeName, #Var_sampler').forEach((e
   
   // Самплеры — тихий режим (только стили из data-axes)
   const sampler = new Fontsampler(el, fontFiles, {
-    multiline: false,    // Однострочный ввод для самплеров
+    multiline: false,
     order: [["fontsize"]],
     config: {
       wght: { init: axes.wght || 400 },
