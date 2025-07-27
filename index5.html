@@ -71,28 +71,31 @@ document.addEventListener("DOMContentLoaded", () => {
           label: false,
         };
         
-        // Применяем фиксированные значения осей через CSS переменные
-        if (el.dataset.axes) {
-          const axes = el.dataset.axes.split(",");
-          let fontVariationSettings = [];
-          
-          axes.forEach(axis => {
-            const [tag, value] = axis.split(":");
-            if (tag && value) {
-              fontVariationSettings.push(`"${tag}" ${value}`);
-            }
-          });
-          
-          if (fontVariationSettings.length > 0) {
-            // Устанавливаем стили прямо на элемент после инициализации
-            setTimeout(() => {
-              const textArea = el.querySelector('textarea, [contenteditable], .fontsampler-text');
-              if (textArea) {
+        // Применяем фиксированные значения осей и размер шрифта
+        setTimeout(() => {
+          const textArea = el.querySelector('textarea, [contenteditable], .fontsampler-text');
+          if (textArea) {
+            // Устанавливаем размер шрифта 44px для readonly
+            textArea.style.fontSize = '44px';
+            
+            // Применяем значения осей если есть
+            if (el.dataset.axes) {
+              const axes = el.dataset.axes.split(",");
+              let fontVariationSettings = [];
+              
+              axes.forEach(axis => {
+                const [tag, value] = axis.split(":");
+                if (tag && value) {
+                  fontVariationSettings.push(`"${tag}" ${value}`);
+                }
+              });
+              
+              if (fontVariationSettings.length > 0) {
                 textArea.style.fontVariationSettings = fontVariationSettings.join(', ');
               }
-            }, 100);
+            }
           }
-        }
+        }, 100);
       }
       
       // MODE: tester — interactive, but without fontsize
@@ -101,6 +104,15 @@ document.addEventListener("DOMContentLoaded", () => {
           editable: true,
           label: false
         };
+        
+        // Устанавливаем размер шрифта 166px для tester
+        setTimeout(() => {
+          const textArea = el.querySelector('textarea, [contenteditable], .fontsampler-text');
+          if (textArea) {
+            textArea.style.fontSize = '166px';
+          }
+        }, 100);
+        
         // Parse order
         if (el.dataset.order) {
           const sections = el.dataset.order.split("|");
