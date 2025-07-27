@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Font5 Sampler Demo</title>
+    <title>Font6 Sampler Demo</title>
     <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
     <style>
         body {
@@ -61,7 +61,7 @@
     </style>
 </head>
 <body>
-    <h1>Демонстрация5 Font Sampler</h1>
+    <h1>Демонстрация6 Font Sampler</h1>
     
     <div class="section">
         <h2>Bitcount Prop Single Variable - Интерактивный тестер</h2>
@@ -353,7 +353,7 @@
             
             // Демонстрация шрифта — readonly
             if (mode === "readonly") {
-                const sampler = new Fontsampler(el, fontFiles, {
+                const sampler = new Fontsampler(el, fontFile, {
                     order: [],
                     config: {
                         fontsize: { 
@@ -397,7 +397,7 @@
                     config.opentype = openTypeFeatures;
                 }
                 
-                const sampler = new Fontsampler(el, fontFiles, {
+                const sampler = new Fontsampler(el, fontFile, {
                     order: order,
                     config: config
                 });
@@ -407,7 +407,7 @@
             }
             
             // Самплеры — тихий режим (только стили из data-axes)
-            const sampler = new Fontsampler(el, fontFiles, {
+            const sampler = new Fontsampler(el, fontFile, {
                 multiline: false,
                 order: [["fontsize"]],
                 config: {
