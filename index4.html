@@ -60,7 +60,6 @@
         }
     </style>
 </head>
-
 <body>
     <h1>Демонстрация Font Sampler</h1>
     
@@ -215,7 +214,6 @@
         </div>
     </div>
 
-    
     <!-- Подключение скриптов -->
     <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
     <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
@@ -362,7 +360,7 @@
                     order: [],
                     config: {
                         fontsize: { 
-                            init: getDataParam(el, 'fontsizeInit', 36),
+                            init: getDataParam(el, 'fontsizeInit', 200),
                             min: getDataParam(el, 'fontsizeMin', 20),
                             max: getDataParam(el, 'fontsizeMax', 500),
                             unit: getDataParam(el, 'fontsizeUnit', "px")
@@ -388,7 +386,7 @@
                 // Начинаем с базового конфига
                 const config = {
                     fontsize: buildParamConfig(el, 'fontsize', { 
-                        init: 100, min: 20, max: 500, step: 1, unit: "px", label: "Size" 
+                        init: 160, min: 20, max: 500, step: 1, unit: "px", label: "Size" 
                     })
                 };
                 
