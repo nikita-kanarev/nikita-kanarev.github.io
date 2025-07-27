@@ -43,8 +43,11 @@
     .fsjs-skin .fsjs-block-type-slidergroup .fsjs-label .fsjs-label-unit:before {
       content: " "; }
   .fsjs-skin .fsjs-block-opentype .fsjs-label {
-    display: block;
-    justify-content: flex-start; }
+    display: inline-block;
+    justify-content: flex-start; 
+    margin-right: 20px;
+    vertical-align: top;
+    font-weight: bold; }
   .fsjs-skin [contenteditable] {
     outline: none; }
   .fsjs-skin .fsjs-button, .fsjs-skin .fsjs-block-type-buttongroup button {
