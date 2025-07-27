@@ -51,129 +51,146 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Демонстрация шрифтов</h1>
-        <p>Интерактивные примеры различных веб‑шрифтов с использованием fontsampler‑js</p>
-    </div>
+<!-- INTER: Variational Tester -->
+<div id="sampler_Inter" 
+    data-mode="tester"
+    data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
+    data-font-name="Inter Variable"
+    data-variable-axes="wght:100:900:1:Weight,opsz:9:72:1:Optical Size,slnt:-10:0:1:Slant"
+    data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
+    data-order="wght,opsz,slnt|opentype|tester"
+    data-initial-text="Inter Variable — современный вариативный шрифт.">Inter Variable — современный вариативный шрифт.</div>
 
-    <!-- Inter Variable Font -->
-    <div class="font-demo">
-        <div class="font-title">Inter Variable</div>
-        <div
-            data-fontsampler
-            data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
-            data-font-name="Inter Variable"
-            data-variable-axes="wght:100:900:1:Weight"
-            data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
-            data-initial-text="Это Inter — современный вариативный шрифт для цифровых интерфейсов. Попробуйте изменить настройки!"
-            data-font-size="24"
-            data-multiline="true">
-        </div>
-    </div>
+<!-- WORKSANS: Readonly samples -->
+<div id="sampler_1"
+    data-mode="readonly"
+    data-font-url="https://nikita-kanarev.github.io/WorkSans.woff2"
+    data-axes="wght:100"
+    data-initial-text="Вес 100">Вес 100</div>
 
-    <!-- Oswald Font -->
-    <div class="font-demo">
-        <div class="font-title">Oswald</div>
-        <div
-            data-fontsampler
-            data-font-url="https://nikita-kanarev.github.io/Oswald.ttf"
-            data-font-name="Oswald"
-            data-opentype-features="kern:Kerning:true"
-            data-initial-text="OSWALD — ВЫРАЗИТЕЛЬНЫЙ ШРИФТ ДЛЯ ЗАГОЛОВКОВ И АКЦЕНТОВ. ИДЕАЛЕН ДЛЯ СОЗДАНИЯ СИЛЬНОГО ВИЗУАЛЬНОГО ВОЗДЕЙСТВИЯ."
-            data-font-size="28"
-            data-multiline="true">
-        </div>
-    </div>
+<div id="sampler_2"
+    data-mode="readonly"
+    data-font-url="https://nikita-kanarev.github.io/WorkSans.woff2"
+    data-axes="wght:400"
+    data-initial-text="Вес 400">Вес 400</div>
 
-    <!-- Bitcount Prop Single Font -->
-    <div class="font-demo">
-        <div class="font-title">Bitcount Prop Single</div>
-        <div
-            data-fontsampler
-            data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
-            data-font-name="Bitcount Prop Single"
-            data-opentype-features="kern:Kerning:true"
-            data-initial-text="Bitcount — уникальный моноширинный шрифт с характером. Отлично подходит для кода и технических текстов."
-            data-font-size="20"
-            data-multiline="true">
-        </div>
-    </div>
+<div id="sampler_3"
+    data-mode="readonly"
+    data-font-url="https://nikita-kanarev.github.io/WorkSans.woff2"
+    data-axes="wght:700"
+    data-initial-text="Вес 700">Вес 700</div>
 
-    <!-- ABCGravity.woff2 Single Font -->
-    <div class="font-demo">
-        <div class="font-title">ABCGravity.woff2</div>
-        <div
-            data-fontsampler
-            data-font-url="https://nikita-kanarev.github.io/ABCGravity.woff2"
-            data-font-name="ABCGravity.woff2"
-            data-opentype-features="kern:Kerning:true"
-            data-initial-text="ABCGravity.woff2 — уникальный моноширинный шрифт с характером. Отлично подходит для кода и технических текстов."
-            data-font-size="20"
-            data-multiline="true">
-        </div>
-    </div>
 
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('[data-fontsampler]').forEach(el => {
-                const fonts = [{
-                    name: el.dataset.fontName || 'Custom Font',
-                    files: [ el.dataset.fontUrl ]
-                }];
-                const options = {
-                    initialText: el.dataset.initialText || '',
-                    multiline: el.dataset.multiline !== 'false',
-                    lazyload: false,
-                    order: [
-                        ["fontsize","lineheight","letterspacing"],
-                        ["alignment"],
-                        "opentype",
-                        "tester"
-                    ],
-                    config: {
-                        fontsize: { unit:"px", init: +el.dataset.fontSize||18, min:12, max:96, step:1, label:"Размер" },
-                        lineheight: { unit:"%", init:140, min:80, max:200, step:5, label:"Интерлиньяж" },
-                        letterspacing: { unit:"em", init:0, min:-0.1, max:0.5, step:0.01, label:"Трекинг" },
-                        alignment: { choices:["left|По левому краю","center|По центру","right|По правому краю"], init:"left", label:"Выравнивание" },
-                        opentype: (() => {
-                            if (!el.dataset.opentypeFeatures) return undefined;
-                            const feats = el.dataset.opentypeFeatures.split(',').map(f => {
-                                const [tag,label,def] = f.split(':');
-                                return { tag, label, def: def==='true' };
-                            });
-                            return {
-                                choices: feats.map(f=>`${f.tag}|${f.label}`),
-                                init: feats.filter(f=>f.def).map(f=>f.tag),
-                                label: "OpenType функции"
-                            };
-                        })(),
-                        tester: { editable:true, label:false }
-                    }
-                };
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-font-url]").forEach(el => {
+    try {
+      const mode = el.dataset.mode || "tester";
+      const fontUrl = el.dataset.fontUrl;
+      const fontName = el.dataset.fontName || "Custom Font";
+      const initialText = el.textContent.trim() || el.dataset.initialText || "Тестовый текст";
+      const multiline = false;
 
-                // add variable axes
-                if (el.dataset.variableAxes) {
-                    const axes = el.dataset.variableAxes.split(',').map(a=>a.split(':'));
-                    axes.forEach(([tag,min,max,step,label]) => {
-                        options.order[0].push(tag);
-                        options.config[tag] = {
-                            init: (+min + (+max-min)/2) | 0,
-                            min: +min,
-                            max: +max,
-                            step: +step || 1,
-                            label: label || tag
-                        };
-                    });
-                }
+      const fonts = [{ name: fontName, files: [fontUrl] }];
 
-                const fs = new Fontsampler(el, fonts, options);
-                // if you loaded skin.js, apply it:
-                if (typeof FontsamplerSkin === 'function') FontsamplerSkin(fs);
-                fs.init();
-            });
+      const options = {
+        initialText: initialText,
+        multiline: multiline,
+        lazyload: false,
+        config: {},
+        order: [],
+      };
+
+      // MODE: readonly — no controls at all
+      if (mode === "readonly") {
+        options.order = [["tester"]];
+        options.config.tester = {
+          editable: false,
+          label: false,
+        };
+
+        // If fixed axis values are specified, apply them
+        const axes = el.dataset.axes?.split(",") || [];
+        axes.forEach(axis => {
+          const [tag, value] = axis.split(":");
+          if (tag && value) {
+            options.config[tag] = {
+              init: parseInt(value),
+              min: parseInt(value),
+              max: parseInt(value),
+              step: 1,
+              hidden: true
+            };
+            options.order.unshift([tag]); // add before tester
+          }
         });
-    </script>
+      }
+
+      // MODE: tester — interactive, but without fontsize
+      if (mode === "tester") {
+        options.config.tester = {
+          editable: true,
+          label: false
+        };
+
+        // Parse order
+        if (el.dataset.order) {
+          const sections = el.dataset.order.split("|");
+          options.order = sections.map(section =>
+            section.includes(",") ? section.split(",") : section
+          );
+        } else {
+          options.order = [["tester"]];
+        }
+
+        // variable axes
+        if (el.dataset.variableAxes) {
+          const axes = el.dataset.variableAxes.split(",");
+          axes.forEach(axis => {
+            const [tag, min, max, step = 1, label = tag] = axis.split(":");
+            if (tag && min && max) {
+              options.config[tag] = {
+                init: (+min + (+max - +min) / 2) | 0,
+                min: +min,
+                max: +max,
+                step: +step,
+                label: label
+              };
+            }
+          });
+        }
+      }
+
+      // OpenType features
+      if (el.dataset.opentypeFeatures) {
+        const feats = el.dataset.opentypeFeatures.split(",").map(f => f.trim());
+        const choices = [], init = [];
+        feats.forEach(f => {
+          const [tag, label, def = "false"] = f.split(":");
+          choices.push(`${tag}|${label}`);
+          if (def === "true") init.push(tag);
+        });
+        options.config.opentype = {
+          label: "OpenType",
+          choices: choices,
+          init: init
+        };
+      }
+
+      // Создание экземпляра
+      const sampler = new Fontsampler(el, fonts, options);
+      if (typeof FontsamplerSkin === "function") FontsamplerSkin(sampler);
+      sampler.init();
+
+    } catch (e) {
+      console.error("Ошибка инициализации sampler:", e);
+      el.innerHTML = '<p style="color:red;">Не удалось загрузить шрифт</p>';
+    }
+  });
+});
+</script>
+
 </body>
 </html>
