@@ -3,205 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Демонстрация шрифтов Fontsampler.js</title>
-    <!-- Подключение стилей Fontsampler.js -->
-    <link rel="stylesheet" href="https://underscoretype.github.io/fontsampler-js/dist/fontsampler-skin.css">
+    <title>Динамическая демонстрация шрифтов</title>
+    
+    <!-- Подключение fontsampler-js и стилей -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fontsampler-js/0.1.4/fontsampler.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fontsampler-js/0.1.4/fontsampler-skin.css">
+    
     <style>
-        /* Базовые стили для тела страницы */
         body {
-            font-family: 'Inter', sans-serif; /* Используем Inter как основной шрифт, если он доступен */
-            margin: 2rem;
-            background-color: #f4f7f6;
-            color: #333;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
         }
-
-        h1 {
-            color: #2c3e50;
+        
+        .header {
             text-align: center;
-            margin-bottom: 3rem;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
             font-size: 2.5rem;
-            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-
-        /* Стили для контейнера каждого Fontsampler */
-        .fontsampler-container {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 3rem;
-            padding: 2rem;
-            border: 1px solid #e0e0e0;
-            transition: transform 0.2s ease-in-out;
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
         }
-
-        .fontsampler-container:hover {
+        
+        .font-demo {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .font-demo:hover {
             transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
-
-        /* Стили для элементов управления Fontsampler (по умолчанию) */
-        .fontsampler-ui-block {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-        }
-
-        /* Стили для текстового поля ввода */
-        .fontsampler-tester {
-            font-size: 2rem; /* Увеличенный размер шрифта для лучшей демонстрации */
-            min-height: 80px;
-            border: 1px solid #dcdcdc;
-            border-radius: 8px;
-            padding: 0.8rem 1rem;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-            transition: border-color 0.2s ease-in-out;
-            width: 100%; /* Полная ширина */
-            box-sizing: border-box; /* Включаем padding в ширину */
-        }
-
-        .fontsampler-tester:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-
-        /* Стили для заголовков шрифтов */
-        .font-name {
+        
+        .font-title {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #2980b9;
-            margin-bottom: 1rem;
+            margin-bottom: 20px;
+            color: #333;
             text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
         }
-
-        /* Адаптивный дизайн для мобильных устройств */
+        
+        /* Улучшенные стили для fontsampler */
+        .fontsamplerjs {
+            font-size: 16px;
+        }
+        
+        .fontsamplerjs .fsjs-wrapper {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .fontsamplerjs .fsjs-block {
+            margin: 5px 0;
+        }
+        
+        .fontsamplerjs .fsjs-label {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: 500;
+            color: #555;
+            min-width: 100px;
+        }
+        
+        .fontsamplerjs input[type="range"] {
+            width: 150px;
+            margin: 0 10px;
+        }
+        
+        .fontsamplerjs select {
+            padding: 5px 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+        
+        .fontsamplerjs .fsjs-button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .fontsamplerjs .fsjs-button:hover,
+        .fontsamplerjs .fsjs-button.fsjs-button-selected {
+            background: #667eea;
+            color: white;
+        }
+        
+        .fontsamplerjs .fsjs-block-tester {
+            margin-top: 20px;
+        }
+        
+        .fontsamplerjs .fsjs-block-tester textarea,
+        .fontsamplerjs .fsjs-block-tester div[contenteditable] {
+            width: 100%;
+            min-height: 120px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 24px;
+            line-height: 1.4;
+            resize: vertical;
+            background: #fafafa;
+            transition: border-color 0.2s ease;
+        }
+        
+        .fontsamplerjs .fsjs-block-tester textarea:focus,
+        .fontsamplerjs .fsjs-block-tester div[contenteditable]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+        
+        .fontsamplerjs.fsjs-loading .fsjs-block-tester textarea,
+        .fontsamplerjs.fsjs-loading .fsjs-block-tester div[contenteditable] {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        /* Анимация загрузки */
+        .fontsamplerjs.fsjs-loading::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            margin: -15px 0 0 -15px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Адаптивность */
         @media (max-width: 768px) {
-            body {
-                margin: 1rem;
+            .fontsamplerjs .fsjs-wrapper {
+                flex-direction: column;
+                align-items: flex-start;
             }
-            h1 {
+            
+            .font-demo {
+                padding: 15px;
+            }
+            
+            .header h1 {
                 font-size: 2rem;
-                margin-bottom: 2rem;
-            }
-            .fontsampler-container {
-                padding: 1.5rem;
-                margin-bottom: 2rem;
-            }
-            .fontsampler-tester {
-                font-size: 1.5rem;
-            }
-            .font-name {
-                font-size: 1.2rem;
             }
         }
     </style>
 </head>
 <body>
-
-    <h1>Примеры вариативных шрифтов</h1>
-
-    <!-- Контейнер для шрифта InterVariable -->
-    <div class="fontsampler-container"
-         data-fontsampler
-         data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
-         data-variable-axes="wght:100:900:1:Weight"
-         data-initial-text="InterVariable: Быстрая коричневая лиса прыгает через ленивую собаку.">
-        <h2 class="font-name">InterVariable</h2>
+    <div class="header">
+        <h1>Демонстрация шрифтов</h1>
+        <p>Интерактивные примеры различных веб-шрифтов с использованием fontsampler-js</p>
     </div>
 
-    <!-- Контейнер для шрифта Oswald -->
-    <div class="fontsampler-container"
-         data-fontsampler
-         data-font-url="https://nikita-kanarev.github.io/Oswald.ttf"
-         data-initial-text="Oswald: Быстрая коричневая лиса прыгает через ленивую собаку.">
-        <h2 class="font-name">Oswald</h2>
+    <!-- Inter Variable Font -->
+    <div class="font-demo">
+        <div class="font-title">Inter Variable</div>
+        <div 
+            data-fontsampler 
+            data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
+            data-font-name="Inter Variable"
+            data-variable-axes="wght:100:900:1:Weight"
+            data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
+            data-initial-text="Это Inter — современный вариативный шрифт для цифровых интерфейсов. Попробуйте изменить настройки!"
+            data-font-size="24"
+            data-multiline="true">
+        </div>
     </div>
 
-    <!-- Контейнер для шрифта BitcountPropSingle -->
-    <div class="fontsampler-container"
-         data-fontsampler
-         data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
-         data-variable-axes="wght:100:900:1:Weight"
-         data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
-         data-initial-text="BitcountPropSingle: Быстрая коричневая лиса прыгает через ленивую собаку.">
-        <h2 class="font-name">BitcountPropSingle</h2>
+    <!-- Oswald Font -->
+    <div class="font-demo">
+        <div class="font-title">Oswald</div>
+        <div 
+            data-fontsampler 
+            data-font-url="https://nikita-kanarev.github.io/Oswald.ttf"
+            data-font-name="Oswald"
+            data-opentype-features="kern:Kerning:true"
+            data-initial-text="OSWALD — ВЫРАЗИТЕЛЬНЫЙ ШРИФТ ДЛЯ ЗАГОЛОВКОВ И АКЦЕНТОВ. ИДЕАЛЕН ДЛЯ СОЗДАНИЯ СИЛЬНОГО ВИЗУАЛЬНОГО ВОЗДЕЙСТВИЯ."
+            data-font-size="28"
+            data-multiline="true">
+        </div>
     </div>
 
-    <!-- Подключение скриптов Fontsampler.js -->
-    <script src="https://underscoretype.github.io/fontsampler-js/dist/fontsampler.js"></script>
-    <script src="https://underscoretype.github.io/fontsampler-js/dist/fontsampler-skin.js"></script>
+    <!-- Bitcount Font -->
+    <div class="font-demo">
+        <div class="font-title">Bitcount Prop Single</div>
+        <div 
+            data-fontsampler 
+            data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
+            data-font-name="Bitcount Prop Single"
+            data-opentype-features="kern:Kerning:true"
+            data-initial-text="Bitcount — уникальный моноширинный шрифт с характером. Отлично подходит для кода и технических текстов."
+            data-font-size="20"
+            data-multiline="true">
+        </div>
+    </div>
+
     <script>
-        // Ждем полной загрузки DOM
-        document.addEventListener('DOMContentLoaded', () => {
+        // Универсальный скрипт для инициализации всех FontSampler экземпляров
+        document.addEventListener('DOMContentLoaded', function() {
             // Находим все элементы с атрибутом data-fontsampler
-            const fontsamplerDemos = document.querySelectorAll('[data-fontsampler]');
-
-            // Итерируем по каждому найденному элементу
-            fontsamplerDemos.forEach(element => {
-                // Извлекаем URL шрифта из data-атрибута
-                const url = element.dataset.fontUrl;
-                // Извлекаем информацию о вариативных осях
-                const axesData = element.dataset.variableAxes;
-                // Извлекаем информацию о функциях OpenType
-                const featuresData = element.dataset.opentypeFeatures;
-                // Извлекаем начальный текст
-                const initialText = element.dataset.initialText || 'Напишите что-нибудь здесь...';
-
-                // Формируем массив шрифтов для Fontsampler (каждый Fontsampler будет отображать один шрифт)
-                const fonts = [{
-                    // Имя шрифта берется из имени файла для удобства
-                    name: url.split('/').pop().split('.')[0],
-                    files: [url] // Массив URL-адресов файлов шрифтов
-                }];
-
-                // Настройки для Fontsampler
-                const options = {
-                    // Определяем порядок и наличие элементов пользовательского интерфейса
-                    order: [
-                        ['tester'], // Поле для ввода текста
-                        ['fontsize', 'lineheight', 'letterspacing'], // Слайдеры для размера, межстрочного интервала, межбуквенного интервала
-                        // Добавляем слайдер для вариативных осей, если они указаны
-                        ...(axesData ? [axesData.split(':')[0]] : []),
-                        // Добавляем элементы управления OpenType, если они указаны
-                        ...(featuresData ? ['opentype'] : []),
-                        ['alignment', 'direction'] // Выравнивание и направление текста
-                    ],
-                    initialText: initialText, // Начальный текст в тестере
-                    lazyload: true // Отложенная загрузка шрифтов для повышения производительности
-                };
-                
-                // Если указаны вариативные оси, добавляем их в опции
-                if (axesData) {
-                    const [axisTag, min, max, step, name] = axesData.split(':');
-                    options.axes = {};
-                    options.axes[axisTag] = {
-                        min: parseFloat(min), // Преобразуем в число
-                        max: parseFloat(max), // Преобразуем в число
-                        step: parseFloat(step), // Преобразуем в число
-                        name: name
+            const fontsamplerElements = document.querySelectorAll('[data-fontsampler]');
+            
+            fontsamplerElements.forEach(function(element) {
+                try {
+                    // Извлекаем данные из data-атрибутов
+                    const fontUrl = element.dataset.fontUrl;
+                    const fontName = element.dataset.fontName || 'Custom Font';
+                    const variableAxes = element.dataset.variableAxes;
+                    const opentypeFeatures = element.dataset.opentypeFeatures;
+                    const initialText = element.dataset.initialText || 'Введите текст для тестирования шрифта...';
+                    const fontSize = parseInt(element.dataset.fontSize) || 18;
+                    const multiline = element.dataset.multiline !== 'false';
+                    
+                    // Формируем массив шрифтов
+                    const fonts = [{
+                        name: fontName,
+                        files: [fontUrl]
+                    }];
+                    
+                    // Базовые опции
+                    let options = {
+                        initialText: initialText,
+                        multiline: multiline,
+                        lazyload: false,
+                        order: [
+                            ["fontsize", "lineheight", "letterspacing"],
+                            ["alignment"],
+                            "tester"
+                        ],
+                        config: {
+                            fontsize: {
+                                unit: "px",
+                                init: fontSize,
+                                min: 12,
+                                max: 96,
+                                step: 1,
+                                label: "Размер"
+                            },
+                            lineheight: {
+                                unit: "%",
+                                init: 140,
+                                min: 80,
+                                max: 200,
+                                step: 5,
+                                label: "Интерлиньяж"
+                            },
+                            letterspacing: {
+                                unit: "em",
+                                init: 0,
+                                min: -0.1,
+                                max: 0.5,
+                                step: 0.01,
+                                label: "Трекинг"
+                            },
+                            alignment: {
+                                choices: ["left|По левому краю", "center|По центру", "right|По правому краю"],
+                                init: "left",
+                                label: "Выравнивание"
+                            },
+                            tester: {
+                                editable: true,
+                                label: false
+                            }
+                        }
                     };
+                    
+                    // Добавляем поддержку вариативных осей, если указаны
+                    if (variableAxes) {
+                        const axes = variableAxes.split(',');
+                        axes.forEach(axis => {
+                            const [tag, min, max, step, label] = axis.split(':');
+                            if (tag && min && max) {
+                                // Добавляем ось в порядок элементов
+                                if (!options.order.find(item => Array.isArray(item) && item.includes(tag))) {
+                                    options.order[0].push(tag);
+                                }
+                                
+                                // Настраиваем конфигурацию оси
+                                options.config[tag] = {
+                                    init: parseInt(min) + Math.floor((parseInt(max) - parseInt(min)) / 2),
+                                    min: parseInt(min),
+                                    max: parseInt(max),
+                                    step: parseInt(step) || 1,
+                                    label: label || tag.toUpperCase()
+                                };
+                            }
+                        });
+                    }
+                    
+                    // Добавляем поддержку OpenType функций, если указаны
+                    if (opentypeFeatures) {
+                        const features = opentypeFeatures.split(',');
+                        const choices = [];
+                        const init = [];
+                        
+                        features.forEach(feature => {
+                            const [tag, label, defaultValue] = feature.split(':');
+                            if (tag && label) {
+                                choices.push(`${tag}|${label}`);
+                                if (defaultValue === 'true') {
+                                    init.push(tag);
+                                }
+                            }
+                        });
+                        
+                        if (choices.length > 0) {
+                            // Добавляем OpenType в порядок
+                            options.order.splice(1, 0, ["opentype"]);
+                            
+                            options.config.opentype = {
+                                choices: choices,
+                                init: init,
+                                label: "OpenType функции"
+                            };
+                        }
+                    }
+                    
+                    // Создаем и инициализируем FontSampler
+                    const fontsampler = new Fontsampler(element, fonts, options);
+                    fontsampler.init();
+                    
+                    console.log(`FontSampler инициализирован для шрифта: ${fontName}`);
+                    
+                } catch (error) {
+                    console.error('Ошибка при инициализации FontSampler:', error);
+                    element.innerHTML = '<p style="color: red;">Ошибка загрузки демонстрации шрифта</p>';
                 }
-
-                // Если указаны функции OpenType, добавляем их в опции
-                if (featuresData) {
-                    options.opentypeFeatures = featuresData.split(',').map(f => {
-                        const [tag, name, enabled] = f.split(':');
-                        return {
-                            tag: tag,
-                            name: name,
-                            enabled: enabled === 'true' // Преобразуем строку в булево значение
-                        };
-                    });
-                }
-
-                // Создаем новый экземпляр Fontsampler
-                const fontsampler = new Fontsampler(element, fonts, options);
-                // Применяем стандартный скин Fontsampler
-                FontsamplerSkin(fontsampler);
-                // Инициализируем Fontsampler
-                fontsampler.init();
             });
         });
     </script>
-
 </body>
 </html>
