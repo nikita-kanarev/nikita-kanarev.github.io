@@ -110,7 +110,7 @@
       height: 10px;
       width: 10px; }
   .fsjs-skin .fsjs-block-type-checkboxes input[type=checkbox]:checked + span:after {
-    border-radius: 4;
+    border-radius: 10;
     background: #333;
     padding: 0;
     top: 2px;
