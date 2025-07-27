@@ -8,7 +8,9 @@
     display: block; }
   .fsjs-skin .fsjs-block-tester {
     transition: opacity 0.2s ease-out;
-    opacity: 1; }
+    opacity: 1; 
+    line-height: 1.5;
+    padding-bottom: 10px;}
   .fsjs-skin.fsjs-loading .fsjs-block-tester, .fsjs-skin.fsjs-timeout .fsjs-block-tester {
     opacity: 0; }
   .fsjs-skin > .fsjs-wrapper {
