@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Font4 Sampler Demo</title>
+    <title>Font5 Sampler Demo</title>
     <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
     <style>
         body {
@@ -61,8 +61,49 @@
     </style>
 </head>
 <body>
-    <h1>Демонстрация Font Sampler</h1>
+    <h1>Демонстрация5 Font Sampler</h1>
     
+    <div class="section">
+        <h2>Bitcount Prop Single Variable - Интерактивный тестер</h2>
+        <div class="description">
+            Тестер вариативного шрифта Bitcount Prop Single с настройкой осей
+        </div>
+        <div class="tester-container">
+            <div id="sampler_bitcount" 
+                 data-mode="tester"
+                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
+                 data-variable-axes="wght:100:900:1:Weight"
+                 data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
+                 data-order="wght|opentype|tester">Bitcount Prop Single variable demonstration</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Bitcount Prop Single Variable - Примеры начертаний</h2>
+        <div class="description">
+            Демонстрация различных начертаний вариативного шрифта Bitcount Prop Single
+        </div>
+        <div class="font-examples">
+            <div id="sampler_bitcount_1" 
+                 data-mode="readonly" 
+                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
+                 data-axes="wght:100"
+                 data-fontsize-init="48">Bitcount Thin (Weight: 100)</div>
+                 
+            <div id="sampler_bitcount_2" 
+                 data-mode="readonly" 
+                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
+                 data-axes="wght:400"
+                 data-fontsize-init="48">Bitcount Regular (Weight: 400)</div>
+                 
+            <div id="sampler_bitcount_3" 
+                 data-mode="readonly" 
+                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
+                 data-axes="wght:900"
+                 data-fontsize-init="48">Bitcount Black (Weight: 900)</div>
+        </div>
+    </div>
+
     <div class="section">
         <h2>Inter Variable - Интерактивный тестер</h2>
         <div class="description">
@@ -148,66 +189,25 @@
     </div>
 
     <div class="section">
-        <h2>Bitcount Prop Single Variable - Интерактивный тестер</h2>
-        <div class="description">
-            Тестер вариативного шрифта Bitcount Prop Single с настройкой осей
-        </div>
-        <div class="tester-container">
-            <div id="sampler_bitcount" 
-                 data-mode="tester"
-                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
-                 data-variable-axes="wght:100:900:1:Weight"
-                 data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
-                 data-order="wght|opentype|tester">Bitcount Prop Single variable demonstration</div>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>Bitcount Prop Single Variable - Примеры начертаний</h2>
-        <div class="description">
-            Демонстрация различных начертаний вариативного шрифта Bitcount Prop Single
-        </div>
-        <div class="font-examples">
-            <div id="sampler_bitcount_1" 
-                 data-mode="readonly" 
-                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
-                 data-axes="wght:100"
-                 data-fontsize-init="48">Bitcount Thin (Weight: 100)</div>
-                 
-            <div id="sampler_bitcount_2" 
-                 data-mode="readonly" 
-                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
-                 data-axes="wght:400"
-                 data-fontsize-init="48">Bitcount Regular (Weight: 400)</div>
-                 
-            <div id="sampler_bitcount_3" 
-                 data-mode="readonly" 
-                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
-                 data-axes="wght:900"
-                 data-fontsize-init="48">Bitcount Black (Weight: 900)</div>
-        </div>
-    </div>
-
-    <div class="section">
         <h2>Базовые самплеры</h2>
         <div class="description">
             Простые демонстрации вариативных шрифтов с минимальным интерфейсом
         </div>
         <div class="font-examples">
             <div id="sampler_basic_1" 
+                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
+                 data-axes="wght:600"
+                 data-fontsize-init="48">Базовый самплер Bitcount Variable</div>
+                 
+            <div id="sampler_basic_2" 
                  data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
                  data-axes="wght:300,opsz:20"
                  data-fontsize-init="48">Базовый самплер Inter Variable</div>
                  
-            <div id="sampler_basic_2" 
+            <div id="sampler_basic_3" 
                  data-font-url="https://nikita-kanarev.github.io/Oswald.ttf"
                  data-axes="wght:500"
                  data-fontsize-init="48">Базовый самплер Oswald Variable</div>
-                 
-            <div id="sampler_basic_3" 
-                 data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
-                 data-axes="wght:600"
-                 data-fontsize-init="48">Базовый самплер Bitcount Variable</div>
         </div>
     </div>
 
