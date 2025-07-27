@@ -24,6 +24,10 @@
     }
   </style>
 </head>
+
+
+
+
 <body>
 
 <!-- Главный тестер с полным функционалом -->
@@ -33,35 +37,26 @@
      data-font-name="Inter Variable"
      data-variable-axes="wght:100:900:1:Weight,opsz:8:36:1:Optical Size,slnt:-15:0:1:Slant"
      data-opentype-features="kern:Kerning:true,liga:Ligatures:true,calt:Contextual Alternates:true,ss01:Stylistic Set 1:false,ss02:Stylistic Set 2:false"
-     data-fontsize-init="160"
-     data-fontsize-min="20"
-     data-fontsize-max="500"
-     data-order="wght,opsz,slnt|fontsize|opentype|tester">Variations example with dynamic axes</div>
+     data-order="wght,opsz,slnt|opentype|tester">Variations example with dynamic axes</div>
 
 <!-- Примеры начертаний с тем же шрифтом -->
 <div class="font-examples">
-  <div id="sampler1" 
+  <div id="sampler_FontName 1" 
        data-mode="readonly" 
        data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
        data-axes="wght:100,opsz:32">Начертание номер1</div>
-  <div id="sampler2" 
+  <div id="sampler_FontName 2" 
        data-mode="readonly" 
        data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
        data-axes="wght:200,opsz:20">Начертание номер2</div>
-  <div id="sampler3" 
+  <div id="sampler_FontName 3" 
        data-mode="readonly" 
        data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
        data-axes="wght:400,opsz:14">Начертание номер3</div>
 </div>
 
-<!-- Пример с другим шрифтом -->
-<div class="font-examples">
-  <div id="sampler4" 
-       data-mode="readonly" 
-       data-font-url="https://fonts.gstatic.com/s/robotoflex/v9/NaVelqLNSJo5rHtdOsNQEBZAlktGdQ.woff2"
-       data-font-name="Roboto Flex"
-       data-axes="wght:300,opsz:20">Roboto Flex Example</div>
-</div>
+
+
 
 <script>
 const fontFiles = [{

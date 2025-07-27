@@ -169,13 +169,32 @@
     <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
     
     <script>
-        const fontFiles = [{
-            name: "Inter Variable",
-            files: ["https://nikita-kanarev.github.io/InterVariable.woff2"]
-        }, {
-            name: "Over Variable", 
-            files: ["https://nikita-kanarev.github.io/OverVariable.woff2"]
-        }];
+        // Динамическое создание fontFiles из data-атрибутов
+        function createFontFiles() {
+            const fontMap = new Map();
+            
+            document.querySelectorAll('[data-font-url]').forEach(el => {
+                const fontUrl = el.dataset.fontUrl;
+                const fontName = el.dataset.fontName || extractFontNameFromUrl(fontUrl);
+                
+                if (!fontMap.has(fontName)) {
+                    fontMap.set(fontName, {
+                        name: fontName,
+                        files: [fontUrl]
+                    });
+                }
+            });
+            
+            return Array.from(fontMap.values());
+        }
+        
+        // Извлечение имени шрифта из URL если data-font-name не указано
+        function extractFontNameFromUrl(url) {
+            const filename = url.split('/').pop().split('?')[0];
+            return filename.replace(/\.(woff2?|otf|ttf)$/i, '').replace(/([A-Z])/g, ' $1').trim();
+        }
+        
+        const fontFiles = createFontFiles();
 
         // Парсинг data-axes="wght:500,opsz:14" → { wght: 500, opsz: 14 }
         function parseAxes(string) {
@@ -280,8 +299,8 @@
             return Object.keys(config).length > 0 ? config : defaults;
         }
 
-        // Главный цикл по всем элементам
-        document.querySelectorAll('[id^="sampler"], #TypeName, #Var_sampler').forEach((el) => {
+        // Главный цикл по всем элементам с data-font-url
+        document.querySelectorAll('[data-font-url]').forEach((el) => {
             const mode = el.dataset.mode || "default";
             const axes = parseAxes(el.dataset.axes);
             
