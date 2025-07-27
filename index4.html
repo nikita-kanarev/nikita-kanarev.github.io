@@ -55,112 +55,50 @@
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("[data-font-url]").forEach(el => {
-    try {
-      const mode = el.dataset.mode || "tester";
-      const fontUrl = el.dataset.fontUrl;
-      const fontName = el.dataset.fontName || "Custom Font";
-      const initialText = el.textContent.trim() || el.dataset.initialText || "Тестовый текст";
-      const multiline = false;
+  document.querySelectorAll("div[id^='sampler_']").forEach(el => {
+    const mode = el.dataset.mode;
+    const fontUrl = el.dataset.fontUrl;
+    const axesRaw = el.dataset.axes || "";
+    const variableAxes = el.dataset.variableAxes?.split(",") || [];
+    const opentypeFeatures = el.dataset.opentypeFeatures?.split(",") || [];
+    const order = el.dataset.order?.split("|").map(s => s.split(",")) || [];
 
-      const fonts = [{ name: fontName, files: [fontUrl] }];
+    const config = {
+      multiline: false,
+      tester: {
+        editable: mode === "tester",
+        label: false
+      }
+    };
 
-      const options = {
-        initialText: initialText,
-        multiline: multiline,
-        lazyload: false,
-        config: {},
-        order: [],
-      };
+    // If readonly, disable sliders and features
+    if (mode === "readonly") {
+      const axes = {};
+      axesRaw.split(",").forEach(pair => {
+        const [key, value] = pair.split(":");
+        if (key && value) axes[key] = { init: parseInt(value) };
+      });
+      config.order = [];
+      config.variations = axes;
+    } else if (mode === "tester") {
+      // Add variation axes config
+      const variations = {};
+      variableAxes.forEach(axis => {
+        variations[axis] = { init: axis === "wght" ? 400 : axis === "opsz" ? 14 : 0 };
+      });
+      config.variations = variations;
 
-      // MODE: readonly — no controls at all
-      if (mode === "readonly") {
-        options.order = [["tester"]];
-        options.config.tester = {
-          editable: false,
-          label: false,
-        };
-
-        // If fixed axis values are specified, apply them
-        const axes = el.dataset.axes?.split(",") || [];
-        axes.forEach(axis => {
-          const [tag, value] = axis.split(":");
-          if (tag && value) {
-            options.config[tag] = {
-              init: parseInt(value),
-              min: parseInt(value),
-              max: parseInt(value),
-              step: 1,
-              hidden: true
-            };
-            options.order.unshift([tag]); // add before tester
-          }
-        });
+      // Add OpenType features if present
+      if (opentypeFeatures.length) {
+        config.features = {};
+        opentypeFeatures.forEach(f => config.features[f] = true);
       }
 
-      // MODE: tester — interactive, but without fontsize
-      if (mode === "tester") {
-        options.config.tester = {
-          editable: true,
-          label: false
-        };
-
-        // Parse order
-        if (el.dataset.order) {
-          const sections = el.dataset.order.split("|");
-          options.order = sections.map(section =>
-            section.includes(",") ? section.split(",") : section
-          );
-        } else {
-          options.order = [["tester"]];
-        }
-
-        // variable axes
-        if (el.dataset.variableAxes) {
-          const axes = el.dataset.variableAxes.split(",");
-          axes.forEach(axis => {
-            const [tag, min, max, step = 1, label = tag] = axis.split(":");
-            if (tag && min && max) {
-              options.config[tag] = {
-                init: (+min + (+max - +min) / 2) | 0,
-                min: +min,
-                max: +max,
-                step: +step,
-                label: label
-              };
-            }
-          });
-        }
-      }
-
-      // OpenType features
-      if (el.dataset.opentypeFeatures) {
-        const feats = el.dataset.opentypeFeatures.split(",").map(f => f.trim());
-        const choices = [], init = [];
-        feats.forEach(f => {
-          const [tag, label, def = "false"] = f.split(":");
-          choices.push(`${tag}|${label}`);
-          if (def === "true") init.push(tag);
-        });
-        options.config.opentype = {
-          label: "OpenType",
-          choices: choices,
-          init: init
-        };
-      }
-
-      // Создание экземпляра
-      const sampler = new Fontsampler(el, fonts, options);
-      if (typeof FontsamplerSkin === "function") FontsamplerSkin(sampler);
-      sampler.init();
-
-    } catch (e) {
-      console.error("Ошибка инициализации sampler:", e);
-      el.innerHTML = '<p style="color:red;">Не удалось загрузить шрифт</p>';
+      if (order.length) config.order = order;
     }
+
+    new Fontsampler(el, fontUrl, config);
   });
-});
 </script>
 
 </body>
