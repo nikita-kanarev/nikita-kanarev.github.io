@@ -1,110 +1,159 @@
-<!DOCTYPE html>
-<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Fontsampler + UI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7Динамическая демонстрация шрифтов</title>
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css">
+ 
 </head>
-
 <body>
+<!-- INTER: Variational Tester -->
+<div id="sampler_Inter" 
+    data-mode="tester"
+    data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
+    data-font-name="Inter Variable"
+    data-variable-axes="wght:100:900:1:Weight,opsz:9:72:1:Optical Size,slnt:-10:0:1:Slant"
+    data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
+    data-order="wght,opsz,slnt|opentype|tester"
+    data-initial-text="Inter Variable — современный вариативный шрифт.">Inter Variable — современный вариативный шрифт.</div>
+<div id="sampler_Inter2" 
+    data-mode="tester"
+    data-font-url="https://nikita-kanarev.github.io/WorkSans.woff2"
+    data-font-name="WorkSans"
+    data-variable-axes="wght:100:900:1:Weight,opsz:9:72:1:Optical Size,slnt:-10:0:1:Slant"
+    data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
+    data-order="wght,opsz,slnt|opentype|tester"
+    data-initial-text="Inter Variable — современный вариативный шрифт.">WorkSans — современный вариативный шрифт.</div>
+<!-- WORKSANS: Readonly samples -->
+<div id="sampler_1"
+    data-mode="readonly"
+    data-font-url="https://nikita-kanarev.github.io/WorkSans.woff2"
+    data-axes="wght:100"
+    data-initial-text="Вес 100">Вес 100</div>
+<div id="sampler_2"
+    data-mode="readonly"
+    data-font-url="https://nikita-kanarev.github.io/WorkSans.woff2"
+    data-axes="wght:400"
+    data-initial-text="Вес 400">Вес 400</div>
+<div id="sampler_3"
+    data-mode="readonly"
+    data-font-url="https://nikita-kanarev.github.io/WorkSans.woff2"
+    data-axes="wght:700"
+    data-initial-text="Вес 700">Вес 700</div>
 
-<!-- Самплер 1 — readonly, фиксированные оси -->
-<div id="sampler1" data-mode="readonly" data-axes="wght:100,opsz:32">+ Readonly example!</div>
-
-<!-- Самплер 2 — полноценный UI -->
-<div id="sampler2">Variations example</div>
-
-<!-- Самплеры 3+ — только начертание и размер (данные приходят через CMS/Webflow) -->
-<div id="sampler3" data-axes="wght:500,opsz:14">Пример начертания 1</div>
-<div id="sampler4" data-axes="wght:900,opsz:14">Пример начертания 2</div>
-<div id="sampler5" data-axes="wght:550,opsz:24">Пример начертания 3</div>
-
-<!-- SCRIPT -->
-
-<script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
 <script>
-const fontFiles = [{
-  name: "My Font",
-  files: ["https://nikita-kanarev.github.io/InterVariable.woff2"]
-}];
-
-// Упрощённый парсер осей из data-axes
-function parseAxes(string) {
-  const axes = {};
-  if (!string) return axes;
-  string.split(',').forEach(pair => {
-    const [key, val] = pair.split(':');
-    axes[key.trim()] = parseFloat(val);
-  });
-  return axes;
-}
-
-document.querySelectorAll('[data-axes]').forEach(el => {
-  const axes = parseAxes(el.getAttribute("data-axes"));
-
-  const v_wght = axes.wght || 0;
-  const v_opsz = axes.opsz || 0;
-
-
-document.querySelectorAll('[id^="sampler"]').forEach((el, index) => {
-  const mode = el.dataset.mode || "default";
-  const axes = parseAxes(el.dataset.axes);
-
-  // READONLY sampler (фиксированные значения)
-  if (mode === "readonly") {
-    const sampler = new Fontsampler(el, fontFiles, {
-      order: [],
-      config: {
-        wght: { init: 100 },
-        opsz: { init: 14 },
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-font-url]").forEach(el => {
+    try {
+      const mode = el.dataset.mode || "tester";
+      const fontUrl = el.dataset.fontUrl;
+      const fontName = el.dataset.fontName || "Custom Font";
+      const initialText = el.textContent.trim() || el.dataset.initialText || "Тестовый текст";
+      const multiline = false;
+      const fonts = [{ name: fontName, files: [fontUrl] }];
+      const options = {
+        initialText: initialText,
+        multiline: multiline,
+        lazyload: false,
+        config: {},
+        order: [],
+      };
+      
+      // MODE: readonly — no controls at all
+      if (mode === "readonly") {
+        // Только tester без каких-либо слайдеров
+        options.order = [["tester"]];
+        options.config.tester = {
+          editable: false,
+          label: false,
+        };
+        
+        // Применяем фиксированные значения осей через CSS переменные
+        if (el.dataset.axes) {
+          const axes = el.dataset.axes.split(",");
+          let fontVariationSettings = [];
+          
+          axes.forEach(axis => {
+            const [tag, value] = axis.split(":");
+            if (tag && value) {
+              fontVariationSettings.push(`"${tag}" ${value}`);
+            }
+          });
+          
+          if (fontVariationSettings.length > 0) {
+            // Устанавливаем стили прямо на элемент после инициализации
+            setTimeout(() => {
+              const textArea = el.querySelector('textarea, [contenteditable], .fontsampler-text');
+              if (textArea) {
+                textArea.style.fontVariationSettings = fontVariationSettings.join(', ');
+              }
+            }, 100);
+          }
+        }
       }
-    });
-    FontsamplerSkin(sampler);
-    sampler.init();
-    return;
-  }
-
-  // FULL UI для sampler2
-  if (el.id === "sampler2") {
-    const options = {
-      order: [["wght", "opsz"], ["opentype"], ["fontsize"], "tester"],
-      config: {
-        wght: { label: "Weight", init: 400, min: 100, max: 900, step: 1 },
-        opsz: { label: "Optical Size", init: 14, min: 8, max: 36, step: 1 },
-        opentype: {
-          label: "",
-          init: ["kern", "liga", "calt"],
-          choices: [
-            "kern|Kerning",
-            "liga|Ligatures",
-            "calt|Contextual Alternates"
-          ]
-        },
-        fontsize: { init: 60, min: 20, max: 150, step: 1, unit: "px", label: "Size" }
+      
+      // MODE: tester — interactive, but without fontsize
+      if (mode === "tester") {
+        options.config.tester = {
+          editable: true,
+          label: false
+        };
+        // Parse order
+        if (el.dataset.order) {
+          const sections = el.dataset.order.split("|");
+          options.order = sections.map(section =>
+            section.includes(",") ? section.split(",") : section
+          );
+        } else {
+          options.order = [["tester"]];
+        }
+        // variable axes
+        if (el.dataset.variableAxes) {
+          const axes = el.dataset.variableAxes.split(",");
+          axes.forEach(axis => {
+            const [tag, min, max, step = 1, label = tag] = axis.split(":");
+            if (tag && min && max) {
+              options.config[tag] = {
+                init: (+min + (+max - +min) / 2) | 0,
+                min: +min,
+                max: +max,
+                step: +step,
+                label: label
+              };
+            }
+          });
+        }
+        
+        // OpenType features
+        if (el.dataset.opentypeFeatures) {
+          const feats = el.dataset.opentypeFeatures.split(",").map(f => f.trim());
+          const choices = [], init = [];
+          feats.forEach(f => {
+            const [tag, label, def = "false"] = f.split(":");
+            choices.push(`${tag}|${label}`);
+            if (def === "true") init.push(tag);
+          });
+          options.config.opentype = {
+            label: "OpenType",
+            choices: choices,
+            init: init
+          };
+        }
       }
-    };
-    const sampler = new Fontsampler(el, fontFiles, options);
-    FontsamplerSkin(sampler);
-    sampler.init();
-    return;
-  }
-
-  // Остальные (3+) — без интерфейса, только задать начертание и размер
-  const sampler = new Fontsampler(el, fontFiles, {
-    order: [],
-    config: {
-        wght: { init: v_wght },
-        opsz: { init: v_opsz },
+      
+      // Создание экземпляра
+      const sampler = new Fontsampler(el, fonts, options);
+      if (typeof FontsamplerSkin === "function") FontsamplerSkin(sampler);
+      sampler.init();
+    } catch (e) {
+      console.error("Ошибка инициализации sampler:", e);
+      el.innerHTML = '<p style="color:red;">Не удалось загрузить шрифт</p>';
     }
   });
-  FontsamplerSkin(sampler);
-  sampler.init();
-
-  
 });
 </script>
-
 </body>
 </html>
