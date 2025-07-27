@@ -3,83 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Демонстрация шрифтов</title>
+    <title>Демонстрация шрифтов Fontsampler.js</title>
+    <!-- Подключение стилей Fontsampler.js -->
     <link rel="stylesheet" href="https://underscoretype.github.io/fontsampler-js/dist/fontsampler-skin.css">
     <style>
+        /* Базовые стили для тела страницы */
         body {
-            font-family: sans-serif;
+            font-family: 'Inter', sans-serif; /* Используем Inter как основной шрифт, если он доступен */
             margin: 2rem;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
         }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        /* Стили для контейнера каждого Fontsampler */
         .fontsampler-container {
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #ccc;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 3rem;
+            padding: 2rem;
+            border: 1px solid #e0e0e0;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .fontsampler-container:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Стили для элементов управления Fontsampler (по умолчанию) */
+        .fontsampler-ui-block {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        /* Стили для текстового поля ввода */
+        .fontsampler-tester {
+            font-size: 2rem; /* Увеличенный размер шрифта для лучшей демонстрации */
+            min-height: 80px;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.2s ease-in-out;
+            width: 100%; /* Полная ширина */
+            box-sizing: border-box; /* Включаем padding в ширину */
+        }
+
+        .fontsampler-tester:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        /* Стили для заголовков шрифтов */
+        .font-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2980b9;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Адаптивный дизайн для мобильных устройств */
+        @media (max-width: 768px) {
+            body {
+                margin: 1rem;
+            }
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 2rem;
+            }
+            .fontsampler-container {
+                padding: 1.5rem;
+                margin-bottom: 2rem;
+            }
+            .fontsampler-tester {
+                font-size: 1.5rem;
+            }
+            .font-name {
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <h1>Демонстрация шрифтов</h1>
+    <h1>Примеры вариативных шрифтов</h1>
 
+    <!-- Контейнер для шрифта InterVariable -->
     <div class="fontsampler-container"
          data-fontsampler
          data-font-url="https://nikita-kanarev.github.io/InterVariable.woff2"
-         data-variable-axes="wght:100:900:1:Weight">
+         data-variable-axes="wght:100:900:1:Weight"
+         data-initial-text="InterVariable: Быстрая коричневая лиса прыгает через ленивую собаку.">
+        <h2 class="font-name">InterVariable</h2>
     </div>
 
+    <!-- Контейнер для шрифта Oswald -->
     <div class="fontsampler-container"
          data-fontsampler
-         data-font-url="https://nikita-kanarev.github.io/Oswald.ttf">
+         data-font-url="https://nikita-kanarev.github.io/Oswald.ttf"
+         data-initial-text="Oswald: Быстрая коричневая лиса прыгает через ленивую собаку.">
+        <h2 class="font-name">Oswald</h2>
     </div>
 
+    <!-- Контейнер для шрифта BitcountPropSingle -->
     <div class="fontsampler-container"
          data-fontsampler
          data-font-url="https://nikita-kanarev.github.io/BitcountPropSingle.ttf"
          data-variable-axes="wght:100:900:1:Weight"
-         data-opentype-features="kern:Kerning:true,liga:Ligatures:true">
+         data-opentype-features="kern:Kerning:true,liga:Ligatures:true"
+         data-initial-text="BitcountPropSingle: Быстрая коричневая лиса прыгает через ленивую собаку.">
+        <h2 class="font-name">BitcountPropSingle</h2>
     </div>
 
+    <!-- Подключение скриптов Fontsampler.js -->
     <script src="https://underscoretype.github.io/fontsampler-js/dist/fontsampler.js"></script>
     <script src="https://underscoretype.github.io/fontsampler-js/dist/fontsampler-skin.js"></script>
     <script>
+        // Ждем полной загрузки DOM
         document.addEventListener('DOMContentLoaded', () => {
+            // Находим все элементы с атрибутом data-fontsampler
             const fontsamplerDemos = document.querySelectorAll('[data-fontsampler]');
-            fontsamplerDemos.forEach(element => {
-                const url = element.dataset.fontUrl;
-                const axes = element.dataset.variableAxes;
-                const features = element.dataset.opentypeFeatures;
 
+            // Итерируем по каждому найденному элементу
+            fontsamplerDemos.forEach(element => {
+                // Извлекаем URL шрифта из data-атрибута
+                const url = element.dataset.fontUrl;
+                // Извлекаем информацию о вариативных осях
+                const axesData = element.dataset.variableAxes;
+                // Извлекаем информацию о функциях OpenType
+                const featuresData = element.dataset.opentypeFeatures;
+                // Извлекаем начальный текст
+                const initialText = element.dataset.initialText || 'Напишите что-нибудь здесь...';
+
+                // Формируем массив шрифтов для Fontsampler (каждый Fontsampler будет отображать один шрифт)
                 const fonts = [{
+                    // Имя шрифта берется из имени файла для удобства
                     name: url.split('/').pop().split('.')[0],
-                    files: [url]
+                    files: [url] // Массив URL-адресов файлов шрифтов
                 }];
 
+                // Настройки для Fontsampler
                 const options = {
+                    // Определяем порядок и наличие элементов пользовательского интерфейса
                     order: [
-                        ['tester'],
-                        ['fontsize', 'lineheight', 'letterspacing'],
-                        ...(axes ? [axes.split(':')[0]] : []),
-                        ...(features ? ['opentype'] : []),
-                        ['alignment', 'direction']
+                        ['tester'], // Поле для ввода текста
+                        ['fontsize', 'lineheight', 'letterspacing'], // Слайдеры для размера, межстрочного интервала, межбуквенного интервала
+                        // Добавляем слайдер для вариативных осей, если они указаны
+                        ...(axesData ? [axesData.split(':')[0]] : []),
+                        // Добавляем элементы управления OpenType, если они указаны
+                        ...(featuresData ? ['opentype'] : []),
+                        ['alignment', 'direction'] // Выравнивание и направление текста
                     ],
-                    initialText: 'The quick brown fox jumps over the lazy dog',
+                    initialText: initialText, // Начальный текст в тестере
+                    lazyload: true // Отложенная загрузка шрифтов для повышения производительности
                 };
                 
-                if (axes) {
-                    const [axisTag, min, max, step, name] = axes.split(':');
+                // Если указаны вариативные оси, добавляем их в опции
+                if (axesData) {
+                    const [axisTag, min, max, step, name] = axesData.split(':');
                     options.axes = {};
-                    options.axes[axisTag] = { min: min, max: max, step: step, name: name };
+                    options.axes[axisTag] = {
+                        min: parseFloat(min), // Преобразуем в число
+                        max: parseFloat(max), // Преобразуем в число
+                        step: parseFloat(step), // Преобразуем в число
+                        name: name
+                    };
                 }
 
-                if (features) {
-                    options.opentypeFeatures = features.split(',').map(f => {
+                // Если указаны функции OpenType, добавляем их в опции
+                if (featuresData) {
+                    options.opentypeFeatures = featuresData.split(',').map(f => {
                         const [tag, name, enabled] = f.split(':');
-                        return { tag, name, enabled: enabled === 'true' };
+                        return {
+                            tag: tag,
+                            name: name,
+                            enabled: enabled === 'true' // Преобразуем строку в булево значение
+                        };
                     });
                 }
 
+                // Создаем новый экземпляр Fontsampler
                 const fontsampler = new Fontsampler(element, fonts, options);
+                // Применяем стандартный скин Fontsampler
                 FontsamplerSkin(fontsampler);
+                // Инициализируем Fontsampler
                 fontsampler.init();
             });
         });
