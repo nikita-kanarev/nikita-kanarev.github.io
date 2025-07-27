@@ -26,10 +26,11 @@
 </head>
 <body>
 
-<!-- Главный тестер -->
+<!-- Главный тестер с подписями осей -->
 <div id="tester" 
      data-mode="tester"
      data-axes="wght:100:900,opsz:8:36,slnt:-15:0"
+     data-labels="wght:Насыщенность,opsz:Оптический размер,slnt:Наклон"
      data-features="kern,liga,calt"
      data-size="160">Variations example with dynamic axes</div>
 
@@ -79,16 +80,19 @@ document.querySelectorAll('[id], [data-wght], [data-opsz]').forEach(el => {
   // Если это главный тестер
   if (mode === 'tester') {
     const axes = parseData(el.dataset.axes);
+    const labels = parseData(el.dataset.labels);
     const features = el.dataset.features?.split(',') || [];
     
-    // Добавляем оси как слайдеры
+    // Добавляем оси как слайдеры с подписями
+    const defaultLabels = { wght: 'Weight', opsz: 'Optical Size', slnt: 'Slant' };
     Object.entries(axes).forEach(([axis, range]) => {
       const [min, max] = range.toString().split(':').map(Number);
       config[axis] = { 
         min, 
         max, 
         init: min + (max - min) * 0.3,
-        step: 1 
+        step: 1,
+        label: labels[axis] || defaultLabels[axis] || axis.toUpperCase()
       };
     });
     
