@@ -50,8 +50,7 @@
     display: inline-block;
     justify-content: flex-start; 
     margin-right: 20px;
-    vertical-align: top;
-    font-weight: bold; }
+    vertical-align: top;}
   .fsjs-skin [contenteditable] {
     outline: none;
     line-height: 1.5; 
