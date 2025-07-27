@@ -9,7 +9,7 @@
   <style>
     /* Принудительно устанавливаем размер для демонстрации шрифта */
     #TypeName .fsjs-block-tester {
-      font-size: 200px !important;
+      font-size: 60px !important;
     }
     
     /* Делаем текст строго в одну строчку ТОЛЬКО для sampler3 и далее */
@@ -166,7 +166,7 @@ document.querySelectorAll('[id^="sampler"], #TypeName, #Var_sampler').forEach((e
       order: [],
       config: {
           fontsize: { 
-              init: getDataParam(el, 'fontsizeInit', 200),
+              init: getDataParam(el, 'fontsizeInit', 60),
               min: getDataParam(el, 'fontsizeMin', 20),
               max: getDataParam(el, 'fontsizeMax', 500),
               unit: getDataParam(el, 'fontsizeUnit', "px")
