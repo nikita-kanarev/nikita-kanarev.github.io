@@ -17,7 +17,9 @@
     display: flex;
     justify-content: space-between; }
   .fsjs-skin .fsjs-block-tester {
-    display: block; }
+    display: block; 
+    overflow: visible;
+    box-sizing: border-box;  }
   .fsjs-skin .fsjs-block,
   .fsjs-skin [data-axis-block] {
     box-sizing: border-box;
@@ -51,7 +53,11 @@
     vertical-align: top;
     font-weight: bold; }
   .fsjs-skin [contenteditable] {
-    outline: none; }
+    outline: none;
+    line-height: 1.5; 
+    padding-bottom: 6px; 
+    vertical-align: baseline;
+    overflow: visible;  }
   .fsjs-skin .fsjs-button, .fsjs-skin .fsjs-block-type-buttongroup button {
     background: #FDFDFD;
     border: 1px solid #b3b3b3;
