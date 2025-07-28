@@ -7,51 +7,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 1200px;
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background: #ffffff;
+            color: #333333;
+            line-height: 1.5;
         }
         
         .container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+            background: #ffffff;
+            border: 1px solid #cccccc;
             padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
         
         h1 {
-            color: #333;
+            color: #333333;
             text-align: center;
             margin-bottom: 30px;
-            font-size: 2.5em;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 24px;
+            font-weight: normal;
         }
         
         .upload-area {
-            border: 3px dashed #667eea;
-            border-radius: 15px;
+            border: 2px solid #cccccc;
             padding: 40px;
             text-align: center;
             margin: 20px 0;
-            transition: all 0.3s ease;
-            background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-        }
-        
-        .upload-area:hover {
-            border-color: #764ba2;
-            transform: scale(1.02);
+            background: #f9f9f9;
         }
         
         .upload-area.dragover {
-            background: linear-gradient(45deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-            transform: scale(1.05);
+            background: #f0f0f0;
+            border-color: #999999;
         }
         
         input[type="file"] {
@@ -59,27 +48,23 @@
         }
         
         .upload-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 10px;
+            background: #ffffff;
+            color: #333333;
+            padding: 10px 20px;
+            border: 1px solid #cccccc;
             cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 14px;
         }
         
         .upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            background: #f9f9f9;
         }
         
         .file-list {
             margin: 20px 0;
             padding: 20px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
+            background: #f9f9f9;
+            border: 1px solid #cccccc;
         }
         
         .file-item {
@@ -88,105 +73,103 @@
             align-items: center;
             padding: 10px;
             margin: 5px 0;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
+            background: #ffffff;
+            border: 1px solid #eeeeee;
         }
         
         .process-btn {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 10px;
+            background: #ffffff;
+            color: #333333;
+            padding: 15px 30px;
+            border: 1px solid #cccccc;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 16px;
             margin: 20px 0;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         
         .process-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            background: #f9f9f9;
         }
         
         .process-btn:disabled {
-            background: #ccc;
+            background: #f0f0f0;
+            color: #999999;
             cursor: not-allowed;
-            transform: none;
         }
         
         .result {
             margin: 20px 0;
             padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 5px solid #667eea;
+            background: #f9f9f9;
+            border: 1px solid #cccccc;
         }
         
         .markdown-output {
-            background: #1e1e1e;
-            color: #d4d4d4;
+            background: #ffffff;
+            color: #333333;
             padding: 20px;
-            border-radius: 10px;
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: 'Courier New', monospace;
             white-space: pre-wrap;
             max-height: 400px;
             overflow-y: auto;
-            border: 1px solid #333;
+            border: 1px solid #cccccc;
+            font-size: 12px;
         }
         
         .copy-btn {
-            background: #17a2b8;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
+            background: #ffffff;
+            color: #333333;
+            padding: 8px 16px;
+            border: 1px solid #cccccc;
             cursor: pointer;
-            margin-top: 10px;
-            transition: all 0.3s ease;
+            margin: 10px 10px 0 0;
+            font-size: 12px;
         }
         
         .copy-btn:hover {
-            background: #138496;
-            transform: translateY(-1px);
+            background: #f9f9f9;
         }
         
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
             margin: 20px 0;
         }
         
         .stat-card {
-            background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-            padding: 20px;
-            border-radius: 10px;
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #cccccc;
             text-align: center;
-            border: 1px solid rgba(102, 126, 234, 0.3);
         }
         
         .stat-number {
-            font-size: 2em;
+            font-size: 18px;
             font-weight: bold;
-            color: #667eea;
+            color: #333333;
+        }
+        
+        .remove-btn {
+            background: #ffffff;
+            color: #333333;
+            border: 1px solid #cccccc;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .remove-btn:hover {
+            background: #f0f0f0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📊 CSV к Markdown конвертер</h1>
+        <h1>CSV к Markdown конвертер</h1>
         
         <div class="upload-area" id="uploadArea">
-            <p>📁 Перетащите CSV файлы сюда или</p>
+            <p>Перетащите CSV файлы сюда или</p>
             <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
                 Выберите файлы
             </button>
@@ -200,7 +183,7 @@
         </div>
         
         <button class="process-btn" id="processBtn" onclick="processFiles()" disabled>
-            🚀 Обработать файлы
+            Обработать файлы
         </button>
         
         <div id="stats" class="stats" style="display: none;"></div>
@@ -208,8 +191,8 @@
         <div id="result" class="result" style="display: none;">
             <h3>Результат (Markdown):</h3>
             <div class="markdown-output" id="markdownOutput"></div>
-            <button class="copy-btn" onclick="copyToClipboard()">📋 Копировать</button>
-            <button class="copy-btn" onclick="downloadMarkdown()" style="background: #28a745; margin-left: 10px;">💾 Скачать MD файл</button>
+            <button class="copy-btn" onclick="copyToClipboard()">Копировать</button>
+            <button class="copy-btn" onclick="downloadMarkdown()">Скачать MD файл</button>
         </div>
     </div>
 
@@ -257,8 +240,8 @@
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
                 fileItem.innerHTML = `
-                    <span>📄 ${file.name}</span>
-                    <button onclick="removeFile(${index})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Удалить</button>
+                    <span>${file.name}</span>
+                    <button class="remove-btn" onclick="removeFile(${index})">Удалить</button>
                 `;
                 filesDiv.appendChild(fileItem);
             });
@@ -278,13 +261,14 @@
         
         async function processFiles() {
             const processBtn = document.getElementById('processBtn');
-            processBtn.textContent = '⏳ Обработка...';
+            processBtn.textContent = 'Обработка...';
             processBtn.disabled = true;
             
             try {
                 const allData = [];
                 let totalSymbols = 0;
                 let activeSymbols = 0;
+                const completionData = [];
                 
                 for (const file of uploadedFiles) {
                     const text = await readFileAsText(file);
@@ -298,6 +282,8 @@
                     if (parsed.errors.length > 0) {
                         console.warn(`Предупреждения при обработке ${file.name}:`, parsed.errors);
                     }
+                    
+                    const fileName = file.name.replace('.csv', '');
                     
                     // Обработка данных из файла
                     parsed.data.forEach(row => {
@@ -319,17 +305,39 @@
                         
                         if (hasActivity && cleanRow.symbol) {
                             allData.push({
-                                file: file.name,
+                                file: fileName,
                                 ...cleanRow
                             });
                             activeSymbols++;
+                            
+                            // Сбор данных о completed
+                            if (cleanRow.completed === 'true') {
+                                // Находим дату завершения из других полей
+                                let completionDate = null;
+                                Object.keys(cleanRow).forEach(key => {
+                                    if (key !== 'symbol' && key !== 'completed' && typeof cleanRow[key] === 'string') {
+                                        const match = cleanRow[key].match(/(\d{4}\s\d{2}\s\d{2})/);
+                                        if (match) {
+                                            completionDate = match[1];
+                                        }
+                                    }
+                                });
+                                
+                                if (completionDate) {
+                                    completionData.push({
+                                        date: completionDate,
+                                        symbol: cleanRow.symbol,
+                                        file: fileName
+                                    });
+                                }
+                            }
                         }
                         totalSymbols++;
                     });
                 }
                 
                 // Генерация Markdown
-                const markdown = generateMarkdown(allData);
+                const markdown = generateMarkdown(allData, completionData, totalSymbols);
                 processedData = markdown;
                 
                 // Отображение результата
@@ -342,7 +350,7 @@
             } catch (error) {
                 alert('Ошибка при обработке файлов: ' + error.message);
             } finally {
-                processBtn.textContent = '🚀 Обработать файлы';
+                processBtn.textContent = 'Обработать файлы';
                 processBtn.disabled = false;
             }
         }
@@ -356,21 +364,12 @@
             });
         }
         
-        function generateMarkdown(data) {
+        function generateMarkdown(data, completionData, totalSymbols) {
             if (data.length === 0) {
                 return '# Результат обработки\n\nНет активных символов для отображения.';
             }
             
-            // Получаем все возможные колонки (исключая symbol и file)
-            const columns = [...new Set(data.flatMap(row => 
-                Object.keys(row).filter(key => key !== 'symbol' && key !== 'file')
-            ))];
-            
             let markdown = '# Прогресс разработки шрифта\n\n';
-            
-            // Заголовок таблицы
-            markdown += '| Символ | ' + columns.map(col => col.charAt(0).toUpperCase() + col.slice(1)).join(' | ') + ' |\n';
-            markdown += '|---------|' + columns.map(() => '-------').join('|') + '|\n';
             
             // Группировка по символам
             const groupedData = {};
@@ -382,36 +381,81 @@
                 groupedData[symbol].push(row);
             });
             
-            // Генерация строк таблицы
+            // Генерация секций для каждого символа
             Object.keys(groupedData).sort().forEach(symbol => {
-                const rows = groupedData[symbol];
+                markdown += `## ${symbol}\n\n`;
                 
-                rows.forEach((row, index) => {
-                    const symbolCell = index === 0 ? `**${symbol}**` : '';
-                    const cells = columns.map(col => {
-                        const value = row[col] || 'false';
-                        const trimmed = value.toString().trim();
-                        
-                        if (trimmed === 'true') {
-                            return '✅';
-                        } else if (trimmed === 'false') {
-                            return '❌';
-                        } else if (/\d{4}\s\d{2}\s\d{2}\s\d{2}:\d{2}/.test(trimmed)) {
-                            return `🔄 ${trimmed}`;
-                        } else {
-                            return trimmed;
-                        }
-                    });
+                const rows = groupedData[symbol];
+                rows.forEach(row => {
+                    // Определяем текущий этап
+                    const stages = ['sketching', 'drawing', 'spacing', 'anchoring', 'kerning', 'proofing', 'completed'];
+                    let currentStage = '';
                     
-                    markdown += `| ${symbolCell} | ${cells.join(' | ')} |\n`;
+                    for (const stage of stages) {
+                        if (row[stage]) {
+                            const value = row[stage].toString().trim();
+                            if (value === 'true') {
+                                continue; // Пропускаем завершенные этапы
+                            } else if (/\d{4}\s\d{2}\s\d{2}\s\d{2}:\d{2}/.test(value)) {
+                                currentStage = stage.charAt(0).toUpperCase() + stage.slice(1);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (currentStage) {
+                        markdown += `${row.file} | ${currentStage}\n`;
+                    }
                 });
+                
+                markdown += '\n';
             });
             
-            markdown += '\n---\n\n';
-            markdown += '**Легенда:**\n';
-            markdown += '- ✅ Завершено\n';
-            markdown += '- 🔄 В процессе (с временной меткой)\n';
-            markdown += '- ❌ Не начато\n\n';
+            // Таблица завершенных глифов по дням
+            if (completionData.length > 0) {
+                markdown += '## Статистика завершения\n\n';
+                
+                // Группировка по датам
+                const dailyCompletion = {};
+                completionData.forEach(item => {
+                    const date = item.date;
+                    if (!dailyCompletion[date]) {
+                        dailyCompletion[date] = 0;
+                    }
+                    dailyCompletion[date]++;
+                });
+                
+                // Таблица по дням
+                markdown += '| Дата | Завершено глифов |\n';
+                markdown += '|------|------------------|\n';
+                
+                let cumulativeTotal = 0;
+                const sortedDates = Object.keys(dailyCompletion).sort();
+                
+                sortedDates.forEach(date => {
+                    const count = dailyCompletion[date];
+                    cumulativeTotal += count;
+                    const formattedDate = date.replace(/\s/g, '-');
+                    markdown += `| ${formattedDate} | ${count} |\n`;
+                });
+                
+                // Прогноз завершения
+                if (sortedDates.length > 1 && cumulativeTotal > 0) {
+                    const firstDate = new Date(sortedDates[0].replace(/\s/g, '-'));
+                    const lastDate = new Date(sortedDates[sortedDates.length - 1].replace(/\s/g, '-'));
+                    const daysSpent = Math.max(1, (lastDate - firstDate) / (1000 * 60 * 60 * 24));
+                    const avgPerDay = cumulativeTotal / daysSpent;
+                    const remainingGlyphs = totalSymbols - cumulativeTotal;
+                    const daysToComplete = Math.ceil(remainingGlyphs / avgPerDay);
+                    
+                    const completionDate = new Date(lastDate);
+                    completionDate.setDate(completionDate.getDate() + daysToComplete);
+                    
+                    markdown += `\n**Примерная дата завершения проекта:** ${completionDate.toISOString().split('T')[0]}\n`;
+                    markdown += `*(Основано на скорости ${avgPerDay.toFixed(2)} глифов в день)*\n\n`;
+                }
+            }
+            
             markdown += `*Обработано файлов: ${uploadedFiles.length}*\n`;
             markdown += `*Дата генерации: ${new Date().toLocaleString('ru-RU')}*`;
             
@@ -445,7 +489,7 @@
             navigator.clipboard.writeText(processedData).then(() => {
                 const btn = event.target;
                 const originalText = btn.textContent;
-                btn.textContent = '✅ Скопировано!';
+                btn.textContent = 'Скопировано!';
                 setTimeout(() => {
                     btn.textContent = originalText;
                 }, 2000);
