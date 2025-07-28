@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV к Markdown конвертер</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+        
+        .upload-area.dragover {
+            background: linear-gradient(45deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            transform: scale(1.05);
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .file-list {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .process-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .markdown-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        
+        .copy-btn {
+            background: #17a2b8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: #138496;
+            transform: translateY(-1px);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 CSV к Markdown конвертер</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <p>📁 Перетащите CSV файлы сюда или</p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Выберите файлы
+            </button>
+            <input type="file" id="fileInput" multiple accept=".csv" onchange="handleFiles(this.files)">
+            <p><small>Поддерживаются только CSV файлы</small></p>
+        </div>
+        
+        <div id="fileList" class="file-list" style="display: none;">
+            <h3>Загруженные файлы:</h3>
+            <div id="files"></div>
+        </div>
+        
+        <button class="process-btn" id="processBtn" onclick="processFiles()" disabled>
+            🚀 Обработать файлы
+        </button>
+        
+        <div id="stats" class="stats" style="display: none;"></div>
+        
+        <div id="result" class="result" style="display: none;">
+            <h3>Результат (Markdown):</h3>
+            <div class="markdown-output" id="markdownOutput"></div>
+            <button class="copy-btn" onclick="copyToClipboard()">📋 Копировать</button>
+            <button class="copy-btn" onclick="downloadMarkdown()" style="background: #28a745; margin-left: 10px;">💾 Скачать MD файл</button>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFiles = [];
+        let processedData = '';
+        
+        // Drag and drop functionality
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        function handleFiles(files) {
+            const csvFiles = Array.from(files).filter(file => file.name.toLowerCase().endsWith('.csv'));
+            
+            if (csvFiles.length === 0) {
+                alert('Пожалуйста, выберите CSV файлы');
+                return;
+            }
+            
+            uploadedFiles = csvFiles;
+            displayFiles();
+            document.getElementById('processBtn').disabled = false;
+        }
+        
+        function displayFiles() {
+            const fileList = document.getElementById('fileList');
+            const filesDiv = document.getElementById('files');
+            
+            filesDiv.innerHTML = '';
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>📄 ${file.name}</span>
+                    <button onclick="removeFile(${index})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Удалить</button>
+                `;
+                filesDiv.appendChild(fileItem);
+            });
+            
+            fileList.style.display = 'block';
+        }
+        
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            if (uploadedFiles.length === 0) {
+                document.getElementById('fileList').style.display = 'none';
+                document.getElementById('processBtn').disabled = true;
+            } else {
+                displayFiles();
+            }
+        }
+        
+        async function processFiles() {
+            const processBtn = document.getElementById('processBtn');
+            processBtn.textContent = '⏳ Обработка...';
+            processBtn.disabled = true;
+            
+            try {
+                const allData = [];
+                let totalSymbols = 0;
+                let activeSymbols = 0;
+                
+                for (const file of uploadedFiles) {
+                    const text = await readFileAsText(file);
+                    const parsed = Papa.parse(text, {
+                        header: true,
+                        skipEmptyLines: true,
+                        dynamicTyping: false,
+                        delimitersToGuess: [',', ';', '\t']
+                    });
+                    
+                    if (parsed.errors.length > 0) {
+                        console.warn(`Предупреждения при обработке ${file.name}:`, parsed.errors);
+                    }
+                    
+                    // Обработка данных из файла
+                    parsed.data.forEach(row => {
+                        // Очистка заголовков от пробелов
+                        const cleanRow = {};
+                        Object.keys(row).forEach(key => {
+                            const cleanKey = key.trim();
+                            cleanRow[cleanKey] = row[key];
+                        });
+                        
+                        // Проверяем, есть ли хотя бы одно true или временная метка
+                        const hasActivity = Object.values(cleanRow).some(value => {
+                            if (typeof value === 'string') {
+                                const trimmed = value.trim();
+                                return trimmed === 'true' || /\d{4}\s\d{2}\s\d{2}\s\d{2}:\d{2}/.test(trimmed);
+                            }
+                            return value === true;
+                        });
+                        
+                        if (hasActivity && cleanRow.symbol) {
+                            allData.push({
+                                file: file.name,
+                                ...cleanRow
+                            });
+                            activeSymbols++;
+                        }
+                        totalSymbols++;
+                    });
+                }
+                
+                // Генерация Markdown
+                const markdown = generateMarkdown(allData);
+                processedData = markdown;
+                
+                // Отображение результата
+                document.getElementById('markdownOutput').textContent = markdown;
+                document.getElementById('result').style.display = 'block';
+                
+                // Статистика
+                displayStats(totalSymbols, activeSymbols, uploadedFiles.length);
+                
+            } catch (error) {
+                alert('Ошибка при обработке файлов: ' + error.message);
+            } finally {
+                processBtn.textContent = '🚀 Обработать файлы';
+                processBtn.disabled = false;
+            }
+        }
+        
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+        
+        function generateMarkdown(data) {
+            if (data.length === 0) {
+                return '# Результат обработки\n\nНет активных символов для отображения.';
+            }
+            
+            // Получаем все возможные колонки (исключая symbol и file)
+            const columns = [...new Set(data.flatMap(row => 
+                Object.keys(row).filter(key => key !== 'symbol' && key !== 'file')
+            ))];
+            
+            let markdown = '# Прогресс разработки шрифта\n\n';
+            
+            // Заголовок таблицы
+            markdown += '| Символ | ' + columns.map(col => col.charAt(0).toUpperCase() + col.slice(1)).join(' | ') + ' |\n';
+            markdown += '|---------|' + columns.map(() => '-------').join('|') + '|\n';
+            
+            // Группировка по символам
+            const groupedData = {};
+            data.forEach(row => {
+                const symbol = row.symbol.trim();
+                if (!groupedData[symbol]) {
+                    groupedData[symbol] = [];
+                }
+                groupedData[symbol].push(row);
+            });
+            
+            // Генерация строк таблицы
+            Object.keys(groupedData).sort().forEach(symbol => {
+                const rows = groupedData[symbol];
+                
+                rows.forEach((row, index) => {
+                    const symbolCell = index === 0 ? `**${symbol}**` : '';
+                    const cells = columns.map(col => {
+                        const value = row[col] || 'false';
+                        const trimmed = value.toString().trim();
+                        
+                        if (trimmed === 'true') {
+                            return '✅';
+                        } else if (trimmed === 'false') {
+                            return '❌';
+                        } else if (/\d{4}\s\d{2}\s\d{2}\s\d{2}:\d{2}/.test(trimmed)) {
+                            return `🔄 ${trimmed}`;
+                        } else {
+                            return trimmed;
+                        }
+                    });
+                    
+                    markdown += `| ${symbolCell} | ${cells.join(' | ')} |\n`;
+                });
+            });
+            
+            markdown += '\n---\n\n';
+            markdown += '**Легенда:**\n';
+            markdown += '- ✅ Завершено\n';
+            markdown += '- 🔄 В процессе (с временной меткой)\n';
+            markdown += '- ❌ Не начато\n\n';
+            markdown += `*Обработано файлов: ${uploadedFiles.length}*\n`;
+            markdown += `*Дата генерации: ${new Date().toLocaleString('ru-RU')}*`;
+            
+            return markdown;
+        }
+        
+        function displayStats(total, active, files) {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${files}</div>
+                    <div>Файлов обработано</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${total}</div>
+                    <div>Всего символов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${active}</div>
+                    <div>Активных символов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${Math.round((active/total)*100)}%</div>
+                    <div>Прогресс</div>
+                </div>
+            `;
+            statsDiv.style.display = 'grid';
+        }
+        
+        function copyToClipboard() {
+            navigator.clipboard.writeText(processedData).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Скопировано!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+        
+        function downloadMarkdown() {
+            const blob = new Blob([processedData], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `font-progress-${new Date().toISOString().split('T')[0]}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
