@@ -218,6 +218,26 @@
             handleFiles(e.dataTransfer.files);
         });
         
+        function shouldExcludeSymbol(symbolName) {
+            const diacriticSuffixes = ['grave', 'acute', 'circumflex', 'dieresis', 'tilde', 'macron', 'breve', 'ring', 'hungarumlaut', 'ogonek', 'cedilla'];
+            const symbol = symbolName.replace('/', ''); // Убираем слэш
+            
+            // Проверяем каждый диакритический суффикс
+            for (const suffix of diacriticSuffixes) {
+                if (symbol.endsWith(suffix)) {
+                    // Если это просто сам диакритический знак или его вариант (.uc, .sc и т.д.), то НЕ исключаем
+                    const prefix = symbol.substring(0, symbol.length - suffix.length);
+                    if (prefix === '' || prefix.match(/^\.(uc|sc|lc)$/)) {
+                        continue; // Не исключаем /grave, /grave.uc и подобные
+                    }
+                    // Если есть префикс-буква, то исключаем
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
         function handleFiles(files) {
             const csvFiles = Array.from(files).filter(file => file.name.toLowerCase().endsWith('.csv'));
             
@@ -294,45 +314,46 @@
                             cleanRow[cleanKey] = row[key];
                         });
                         
-                        // Проверяем, есть ли хотя бы одно true или временная метка
-                        const hasActivity = Object.values(cleanRow).some(value => {
-                            if (typeof value === 'string') {
-                                const trimmed = value.trim();
-                                return trimmed === 'true' || /\d{4}\s\d{2}\s\d{2}\s\d{2}:\d{2}/.test(trimmed);
-                            }
-                            return value === true;
-                        });
-                        
-                        if (hasActivity && cleanRow.symbol) {
-                            allData.push({
-                                file: fileName,
-                                ...cleanRow
-                            });
-                            activeSymbols++;
+                        if (cleanRow.symbol) {
+                            // Проверяем, нужно ли исключить символ из подсчета
+                            const shouldExcludeFromCount = shouldExcludeSymbol(cleanRow.symbol);
                             
-                            // Сбор данных о completed
-                            if (cleanRow.completed === 'true') {
-                                // Находим дату завершения из других полей
-                                let completionDate = null;
-                                Object.keys(cleanRow).forEach(key => {
-                                    if (key !== 'symbol' && key !== 'completed' && typeof cleanRow[key] === 'string') {
-                                        const match = cleanRow[key].match(/(\d{4}\s\d{2}\s\d{2})/);
-                                        if (match) {
-                                            completionDate = match[1];
-                                        }
-                                    }
-                                });
+                            if (!shouldExcludeFromCount) {
+                                totalSymbols++;
+                            }
+                            
+                            // Сбор данных о completed глифах (для всех символов)
+                            if (cleanRow.completed && cleanRow.completed !== 'false') {
+                                // Проверяем, что completed содержит дату
+                                const completedValue = cleanRow.completed.toString().trim();
+                                const dateMatch = completedValue.match(/(\d{4}\s\d{2}\s\d{2})/);
                                 
-                                if (completionDate) {
+                                if (dateMatch && !shouldExcludeFromCount) {
                                     completionData.push({
-                                        date: completionDate,
+                                        date: dateMatch[1],
                                         symbol: cleanRow.symbol,
                                         file: fileName
                                     });
                                 }
                             }
+                            
+                            // Проверяем, есть ли хотя бы одно true или временная метка для вывода
+                            const hasActivity = Object.values(cleanRow).some(value => {
+                                if (typeof value === 'string') {
+                                    const trimmed = value.trim();
+                                    return trimmed === 'true' || /\d{4}\s\d{2}\s\d{2}\s\d{2}:\d{2}/.test(trimmed);
+                                }
+                                return value === true;
+                            });
+                            
+                            if (hasActivity) {
+                                allData.push({
+                                    file: fileName,
+                                    ...cleanRow
+                                });
+                                activeSymbols++;
+                            }
                         }
-                        totalSymbols++;
                     });
                 }
                 
@@ -412,9 +433,9 @@
             });
             
             // Таблица завершенных глифов по дням
+            markdown += '## Статистика завершения\n\n';
+            
             if (completionData.length > 0) {
-                markdown += '## Статистика завершения\n\n';
-                
                 // Группировка по датам
                 const dailyCompletion = {};
                 completionData.forEach(item => {
@@ -426,6 +447,7 @@
                 });
                 
                 // Таблица по дням
+                markdown += '### Завершенные глифы по дням\n\n';
                 markdown += '| Дата | Завершено глифов |\n';
                 markdown += '|------|------------------|\n';
                 
@@ -439,21 +461,37 @@
                     markdown += `| ${formattedDate} | ${count} |\n`;
                 });
                 
+                markdown += `\n**Всего завершено:** ${cumulativeTotal} из ${totalSymbols} глифов\n`;
+                markdown += `**Дата начала работы:** ${sortedDates[0].replace(/\s/g, '-')}\n\n`;
+                
                 // Прогноз завершения
-                if (sortedDates.length > 1 && cumulativeTotal > 0) {
+                if (sortedDates.length >= 1 && cumulativeTotal > 0) {
                     const firstDate = new Date(sortedDates[0].replace(/\s/g, '-'));
                     const lastDate = new Date(sortedDates[sortedDates.length - 1].replace(/\s/g, '-'));
-                    const daysSpent = Math.max(1, (lastDate - firstDate) / (1000 * 60 * 60 * 24));
+                    const daysSpent = Math.max(1, (lastDate - firstDate) / (1000 * 60 * 60 * 24) + 1);
                     const avgPerDay = cumulativeTotal / daysSpent;
                     const remainingGlyphs = totalSymbols - cumulativeTotal;
-                    const daysToComplete = Math.ceil(remainingGlyphs / avgPerDay);
                     
-                    const completionDate = new Date(lastDate);
-                    completionDate.setDate(completionDate.getDate() + daysToComplete);
-                    
-                    markdown += `\n**Примерная дата завершения проекта:** ${completionDate.toISOString().split('T')[0]}\n`;
-                    markdown += `*(Основано на скорости ${avgPerDay.toFixed(2)} глифов в день)*\n\n`;
+                    if (remainingGlyphs > 0) {
+                        const daysToComplete = Math.ceil(remainingGlyphs / avgPerDay);
+                        const completionDate = new Date(lastDate);
+                        completionDate.setDate(completionDate.getDate() + daysToComplete);
+                        
+                        markdown += `### Прогноз завершения проекта\n\n`;
+                        markdown += `**Дата начала работы:** ${firstDate.toISOString().split('T')[0]}\n`;
+                        markdown += `**Примерная дата завершения:** ${completionDate.toISOString().split('T')[0]}\n`;
+                        markdown += `**Средняя скорость:** ${avgPerDay.toFixed(2)} глифов в день\n`;
+                        markdown += `**Осталось дней:** ${daysToComplete}\n`;
+                        markdown += `**Осталось глифов:** ${remainingGlyphs}\n\n`;
+                    } else {
+                        markdown += `### Проект завершен!\n\n`;
+                        markdown += `**Дата начала работы:** ${firstDate.toISOString().split('T')[0]}\n`;
+                        markdown += `**Дата завершения:** ${lastDate.toISOString().split('T')[0]}\n`;
+                        markdown += `**Средняя скорость:** ${avgPerDay.toFixed(2)} глифов в день\n\n`;
+                    }
                 }
+            } else {
+                markdown += 'Нет данных о завершенных глифах.\n\n';
             }
             
             markdown += `*Обработано файлов: ${uploadedFiles.length}*\n`;
