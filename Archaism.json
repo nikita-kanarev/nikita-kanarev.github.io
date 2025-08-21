@@ -10,6 +10,6 @@
     "instances": [
       { "name": "Wd100Ct0",    "instance": { "wdth": 100, "cntr": 0 } },
       { "name": "Wd500Ct2",    "instance": { "wdth": 50, "cntr": 2 } },
-      { "name": "Wd0Ct1",    "instance": { "wdth": 0, "cntr": 1 } },
+      { "name": "Wd0Ct1",    "instance": { "wdth": 0, "cntr": 1 } }
     ]
   }
