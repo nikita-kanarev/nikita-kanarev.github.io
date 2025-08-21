@@ -1,7 +1,6 @@
   {
     "name": "Archaism",
-    "files": ["https://nikita-kanarev.github.io/Archaism.woff2"
-    ],
+    "files": "https://nikita-kanarev.github.io/Archaism.woff2",
     "axes": [
       { "tag": "wdth", "min": 0,  "max": 100,  "default": 50, "step": 1,  "label": "Width" },
       { "tag": "cntr", "min": 0,   "max": 2,  "default": 1,  "step": 1,  "label": "Contrast" }
