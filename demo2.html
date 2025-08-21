@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fontsampler Test</title>
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  .fontsampler { margin-bottom: 40px; }
+</style>
+</head>
+<body>
+
+<h1>Fontsampler Test</h1>
+
+<!-- Название шрифта -->
+<div id="name_archaism" data-meta="https://nikita-kanarev.github.io/Archaism.json"></div>
+
+<!-- Основной single-line tester -->
+<div id="main_sampler_archaism" data-meta="https://nikita-kanarev.github.io/Archaism.json"></div>
+
+<!-- Многострочный tester -->
+<div id="sampler_archaism" data-meta="https://nikita-kanarev.github.io/Archaism.json"></div>
+
+<!-- Styles sampler -->
+<div id="styles_sampler_archaism" data-meta="https://nikita-kanarev.github.io/Archaism.json"></div>
+
+<script>
+async function initFontSampler(divId) {
+  const div = document.getElementById(divId);
+  if (!div) return;
+
+  const metaPath = div.dataset.meta;
+  if (!metaPath) {
+    console.error(`No data-meta for div ${divId}`);
+    return;
+  }
+
+  try {
+    // 1️⃣ Загружаем JSON
+    const response = await fetch(metaPath);
+    if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+    const meta = await response.json();
+
+    // 2️⃣ Валидация JSON
+    meta.axes = meta.axes || [];
+    meta.features = meta.features || [];
+    meta.instances = meta.instances || [];
+
+    // Убираем лишние оси в instance, которых нет в axes
+    meta.instances.forEach(inst => {
+      for (const tag in inst.instance) {
+        if (!meta.axes.some(ax => ax.tag === tag)) {
+          console.warn(`Axis "${tag}" in instance "${inst.name}" is not declared in axes list`);
+          delete inst.instance[tag];
+        }
+      }
+    });
+
+    // 3️⃣ Инициализация fontsampler
+    new Fontsampler(div, [meta], {
+      size: 80,
+      variableAxes: true,
+      opentypeFeatures: true
+    });
+
+    // 4️⃣ Если это div с названием шрифта
+    if (divId.startsWith('name_')) {
+      div.textContent = meta.name;
+    }
+
+  } catch (e) {
+    console.error(`Failed to init fontsampler for ${divId}:`, e);
+    div.textContent = "Error loading font metadata";
+  }
+}
+
+// Находим все div с data-meta и инициализируем
+document.querySelectorAll('[data-meta]').forEach(div => {
+  initFontSampler(div.id);
+});
+</script>
+
+</body>
+</html>
