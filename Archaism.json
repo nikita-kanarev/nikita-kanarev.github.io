@@ -1,0 +1,16 @@
+  {
+    "name": "Archaism",
+    "files": [
+      "Archaism.woff2",
+    ],
+    "axes": [
+      { "tag": "wdth", "min": 0,  "max": 100,  "default": 50, "step": 1,  "label": "Width" },
+      { "tag": "cntr", "min": 0,   "max": 2,  "default": 1,  "step": 1,  "label": "Contrast" }
+    ],
+    "features": ["liga", "dlig", "ss01", "onum"],
+    "instances": [
+      { "name": "Wd100Ct0",    "instance": { "wght": 100, "cntr": 0 } },
+      { "name": "Wd500Ct2",    "instance": { "wght": 50, "cntr": 2 } },
+      { "name": "Wd0Ct1",    "instance": { "wght": 0, "cntr": 1 } },
+    ]
+  }
