@@ -158,8 +158,13 @@
         if (!res.ok) return fail(`Failed to load metadata: ${res.status} ${res.statusText}`);
         
         const json = await res.json();
-        if (!json || !Array.isArray(json.files)) {
-          return fail("Invalid metadata: missing 'files' array");
+        if (!json || (!json.files && !Array.isArray(json.files))) {
+          return fail("Invalid metadata: missing 'files' property");
+        }
+        
+        // Normalize files to array format
+        if (typeof json.files === 'string') {
+          json.files = [json.files];
         }
         
         return json;
@@ -484,20 +489,32 @@
   Example JSON metadata structure:
   Save as: Archaism.json (same name as font file but with .json extension)
   
+  The original Archaism.json had a syntax error (extra comma). Here's the corrected version:
+  
   {
     "name": "Archaism",
-    "files": ["https://nikita-kanarev.github.io/Archaism.woff2"],
+    "files": "https://nikita-kanarev.github.io/Archaism.woff2",
     "axes": [
       { "tag": "wdth", "min": 0, "max": 100, "default": 50, "step": 1, "label": "Width" },
       { "tag": "cntr", "min": 0, "max": 2, "default": 1, "step": 1, "label": "Contrast" }
     ],
     "features": ["liga", "dlig", "ss01", "onum"],
     "instances": [
-      { "name": "Wide Low Contrast", "instance": { "wdth": 100, "cntr": 0 } },
-      { "name": "Medium High Contrast", "instance": { "wdth": 50, "cntr": 2 } },
-      { "name": "Narrow Medium", "instance": { "wdth": 0, "cntr": 1 } }
+      { "name": "Wd100Ct0", "instance": { "wdth": 100, "cntr": 0 } },
+      { "name": "Wd500Ct2", "instance": { "wdth": 50, "cntr": 2 } },
+      { "name": "Wd0Ct1", "instance": { "wdth": 0, "cntr": 1 } }
     ]
   }
+  
+  Note: The script now supports both formats:
+  - "files": "single-file.woff2" (string)
+  - "files": ["file1.woff2", "file2.woff"] (array)
+  
+  IMPORTANT: The original file had this error:
+  "files": ["https://nikita-kanarev.github.io/Archaism.woff2",]  // <- extra comma
+  
+  Should be:
+  "files": ["https://nikita-kanarev.github.io/Archaism.woff2"]   // <- no comma
   -->
 
 </body>
