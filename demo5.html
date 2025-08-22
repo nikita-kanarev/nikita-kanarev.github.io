@@ -76,6 +76,12 @@
     [id^="name_"] .fsjs-control-group {
       display: none !important;
     }
+
+    .fsx-instances .fsjs-control-fontsize,
+    .fsx-instances .fsjs-control-opentype,
+    .fsx-instances .fsjs-control-axis {
+    display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -375,7 +381,7 @@
             const nameOptions = buildOptions(meta, { 
               multiline: false, 
               initialText: meta.name || "Font Name", 
-              sizePx: 48, 
+              sizePx: 200, 
               readonly: true,
               showSize: false 
             });
@@ -389,7 +395,7 @@
             const mainOptions = buildOptions(meta, { 
               multiline: false, 
               initialText: "Type here", 
-              sizePx: 80, 
+              sizePx: 180, 
               readonly: false,
               showSize: false 
             });
