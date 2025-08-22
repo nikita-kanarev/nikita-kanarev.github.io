@@ -11,6 +11,6 @@
       { "name": "Regular",    "instance": { "wght": 350, "opsz": 16 } },
       { "name": "Bold",    "instance": { "wght": 500, "opsz": 20 } },
       { "name": "Black",    "instance": { "wght": 700, "opsz": 24 } },      
-      { "name": "Poster",    "instance": { "wght": 900, "opsz": 32 } },   
+      { "name": "Poster",    "instance": { "wght": 900, "opsz": 32 } }   
     ]
   }
