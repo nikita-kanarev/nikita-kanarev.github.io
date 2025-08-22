@@ -1,0 +1,16 @@
+  {
+    "name": "InterVariable",
+    "files": "https://nikita-kanarev.github.io/InterVariable.woff2",
+    "axes": [
+      { "tag": "wght", "min": 100,  "max": 900,  "default": 400, "step": 1,  "label": "Weight" },
+      { "tag": "opsz", "min": 14,   "max": 32,  "default": 14,  "step": 1,  "label": "Optical size" }
+    ],
+    "features": ["c2sc", "calt", "ss01", "ss02"],
+    "instances": [
+      { "name": "Thin",    "instance": { "wght": 100, "opsz": 32 } },
+      { "name": "Regular",    "instance": { "wght": 350, "opsz": 16 } },
+      { "name": "Bold",    "instance": { "wght": 500, "opsz": 20 } },
+      { "name": "Black",    "instance": { "wght": 700, "opsz": 24 } },      
+      { "name": "Poster",    "instance": { "wght": 900, "opsz": 32 } },   
+    ]
+  }
