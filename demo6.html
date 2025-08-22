@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fontsampler Auto Init — Universal Demo (Fixed)</title>
+  <title>Fontsampler Auto Init — Universal Demo</title>
   <!-- Include fontsampler core -->
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
@@ -73,22 +73,31 @@
       font-size: 12px;
     }
 
-    /* Скрыть контролы для instances в named instances секции */
+    /* ИСПРАВЛЕННЫЕ ПРАВИЛА */
+    
+    /* Скрыть контролы для name_ элементов (теперь работает, так как добавили скин) */
+    [id^="name_"] .fsjs-control-group {
+      display: none !important;
+    }
+    
+    /* Альтернативный способ - скрыть все контролы кроме tester */
+    [id^="name_"] .fsjs-control-fontsize,
+    [id^="name_"] .fsjs-control-opentype,
+    [id^="name_"] .fsjs-control-axis {
+      display: none !important;
+    }
+
+    /* Установить большой размер шрифта для name элементов */
+    [id^="name_"] .fsjs-tester {
+      font-size: 200px !important;
+      line-height: 1 !important;
+    }
+
+    /* Скрыть некоторые контролы для instances */
     .fsx-instances .fsjs-control-fontsize,
     .fsx-instances .fsjs-control-opentype,
     .fsx-instances .fsjs-control-axis {
       display: none !important;
-    }
-
-    /* Класс для скрытия контролов - будет применяться через JS */
-    .hide-controls .fsjs-control-group {
-      display: none !important;
-    }
-
-    /* Большой размер текста для name секций */
-    .name-display .fsjs-tester {
-      font-size: 200px !important;
-      line-height: 1.1 !important;
     }
   </style>
 </head>
@@ -110,6 +119,23 @@
     
     <h2>Styles Sampler</h2>    
     <div id="styles_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+
+  </div>
+
+
+  <div class="fsx-section">
+    
+    <h2>Name</h2>
+    <div id="name_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
+    
+    <h2>Main Sampler</h2>
+    <div id="main_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
+    
+    <h2>Sampler</h2>
+    <div id="sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
+    
+    <h2>Styles Sampler</h2>    
+    <div id="styles_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
 
   </div>
 
@@ -216,10 +242,9 @@
     function buildOptions(meta, {
       multiline = true,
       initialText = "",
-      sizePx = 18,
+      initialSize = 18,
       readonly = false,
-      showSize = false,
-      hideControls = false
+      showSize = false
     } = {}) {
       
       const order = [];
@@ -232,53 +257,53 @@
         label: false 
       };
 
-      // Size control (optional)
+      // Size control (optional) - ИСПРАВЛЕНО: используем initialSize
       if (showSize) {
         order.unshift(["fontsize"]);
         config.fontsize = { 
           unit: "px", 
-          init: sizePx, 
+          init: initialSize, 
           min: 8, 
-          max: 256, 
+          max: 512, 
           step: 1, 
           label: "Size" 
         };
       }
 
-      // Если hideControls = true, не добавляем контролы
-      if (!hideControls) {
-        // OpenType features
-        if (Array.isArray(meta.features) && meta.features.length) {
-          order.push(["opentype"]);
-          config.opentype = { 
-            choices: meta.features, 
-            init: meta.features.includes('liga') ? ['liga'] : [], 
-            label: "Features" 
+      // OpenType features
+      if (Array.isArray(meta.features) && meta.features.length) {
+        order.push(["opentype"]);
+        config.opentype = { 
+          choices: meta.features, 
+          init: meta.features.includes('liga') ? ['liga'] : [], 
+          label: "Features" 
+        };
+      }
+
+      // Variable font axes
+      if (Array.isArray(meta.axes) && meta.axes.length) {
+        const axisRow = [];
+        
+        for (const axis of meta.axes) {
+          const tag = axis.tag;
+          axisRow.push(tag);
+          
+          config[tag] = {
+            init: typeof axis.default === "number" ? axis.default : axis.min,
+            min: axis.min,
+            max: axis.max,
+            step: axis.step || 1,
+            label: axis.label || tag.toUpperCase()
           };
         }
-
-        // Variable font axes
-        if (Array.isArray(meta.axes) && meta.axes.length) {
-          const axisRow = [];
-          
-          for (const axis of meta.axes) {
-            const tag = axis.tag;
-            axisRow.push(tag);
-            
-            config[tag] = {
-              init: typeof axis.default === "number" ? axis.default : axis.min,
-              min: axis.min,
-              max: axis.max,
-              step: axis.step || 1,
-              label: axis.label || tag.toUpperCase()
-            };
-          }
-          
-          if (axisRow.length) {
-            order.push(axisRow);
-          }
+        
+        if (axisRow.length) {
+          order.push(axisRow);
         }
       }
+
+      // ИСПРАВЛЕНО: добавляем размер в CSS если нет showSize
+      const cssOverride = !showSize ? { fontSize: `${initialSize}px` } : {};
 
       return {
         initialText,
@@ -286,6 +311,7 @@
         lazyload: false,
         order,
         config,
+        css: cssOverride,
         classes: { 
           rootClass: "fsjs-skin" 
         }
@@ -338,10 +364,9 @@
         const instanceOptions = buildOptions(meta, {
           multiline: false,
           initialText: "Type here",
-          sizePx: 48,
+          initialSize: 48,
           readonly: false,
-          showSize: false,
-          hideControls: true // Скрываем контролы для instances
+          showSize: false
         });
         
         try {
@@ -384,29 +409,18 @@
       try {
         switch (type) {
           case "name":
-            // Readonly name display
+            // ИСПРАВЛЕНО: Readonly name display с применением скина
             const nameOptions = buildOptions(meta, { 
               multiline: false, 
               initialText: meta.name || "Font Name", 
-              sizePx: 200, 
+              initialSize: 200, 
               readonly: true,
-              showSize: false,
-              hideControls: true // Скрыть все контролы для name
+              showSize: false 
             });
             
             const nameFs = new Fontsampler(node, buildFonts(meta), nameOptions);
+            FontsamplerSkin(nameFs); // <- ДОБАВЛЕНО: применяем скин чтобы CSS селекторы работали
             nameFs.init();
-            
-            // Добавить CSS класс и установить размер после инициализации
-            setTimeout(() => {
-              node.classList.add('hide-controls', 'name-display');
-              // Принудительно установить размер шрифта
-              const testerEl = node.querySelector('.fsjs-tester');
-              if (testerEl) {
-                testerEl.style.fontSize = '200px';
-                testerEl.style.lineHeight = '1.1';
-              }
-            }, 100);
             break;
 
           case "main":
@@ -414,7 +428,7 @@
             const mainOptions = buildOptions(meta, { 
               multiline: false, 
               initialText: "Type here", 
-              sizePx: 180, 
+              initialSize: 180, 
               readonly: false,
               showSize: false 
             });
@@ -422,14 +436,6 @@
             const mainFs = new Fontsampler(node, buildFonts(meta), mainOptions);
             FontsamplerSkin(mainFs);
             mainFs.init();
-            
-            // Установить размер шрифта после инициализации
-            setTimeout(() => {
-              const testerEl = node.querySelector('.fsjs-tester');
-              if (testerEl) {
-                testerEl.style.fontSize = '180px';
-              }
-            }, 100);
             
             // Add named instances display
             setTimeout(() => {
@@ -442,7 +448,7 @@
             const multiOptions = buildOptions(meta, { 
               multiline: true, 
               initialText: "Multi-line text here...\nType more text to test the font.", 
-              sizePx: 24, 
+              initialSize: 24, 
               readonly: false,
               showSize: true 
             });
@@ -477,7 +483,7 @@
               const styleOptions = buildOptions(meta, { 
                 multiline: false, 
                 initialText: inst.name, 
-                sizePx: 32, 
+                initialSize: 32, 
                 readonly: false,
                 showSize: true 
               });
@@ -525,26 +531,6 @@
     }
   })();
   </script>
-
-  <!-- 
-  Example JSON metadata structure:
-  Save as: Archaism.json (same name as font file but with .json extension)
-  
-  {
-    "name": "Archaism",
-    "files": "https://nikita-kanarev.github.io/Archaism.woff2",
-    "axes": [
-      { "tag": "wdth", "min": 0, "max": 100, "default": 50, "step": 1, "label": "Width" },
-      { "tag": "cntr", "min": 0, "max": 2, "default": 1, "step": 1, "label": "Contrast" }
-    ],
-    "features": ["liga", "dlig", "ss01", "onum"],
-    "instances": [
-      { "name": "Wd100Ct0", "instance": { "wdth": 100, "cntr": 0 } },
-      { "name": "Wd500Ct2", "instance": { "wdth": 50, "cntr": 2 } },
-      { "name": "Wd0Ct1", "instance": { "wdth": 0, "cntr": 1 } }
-    ]
-  }
-  -->
 
 </body>
 </html>
