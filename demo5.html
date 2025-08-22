@@ -326,7 +326,7 @@
         
         try {
           const fonts = buildFonts(meta, inst.instance);
-          const fs = new FontSampler(sample, fonts, instanceOptions);
+          const fs = new Fontsampler(sample, fonts, instanceOptions);
           fs.init();
         } catch (err) {
           sample.textContent = `Error: ${err.message}`;
@@ -373,7 +373,7 @@
               showSize: false 
             });
             
-            const nameFs = new FontSampler(node, buildFonts(meta), nameOptions);
+            const nameFs = new Fontsampler(node, buildFonts(meta), nameOptions);
             nameFs.init();
             break;
 
@@ -387,7 +387,7 @@
               showSize: false 
             });
             
-            const mainFs = new FontSampler(node, buildFonts(meta), mainOptions);
+            const mainFs = new Fontsampler(node, buildFonts(meta), mainOptions);
             mainFs.init();
             
             // Add named instances display
@@ -406,7 +406,7 @@
               showSize: true 
             });
             
-            const multiFs = new FontSampler(node, buildFonts(meta), multiOptions);
+            const multiFs = new Fontsampler(node, buildFonts(meta), multiOptions);
             multiFs.init();
             break;
 
@@ -441,7 +441,7 @@
                 showSize: true 
               });
               
-              const styleFs = new FontSampler(mount, buildFonts(meta, inst.instance), styleOptions);
+              const styleFs = new Fontsampler(mount, buildFonts(meta, inst.instance), styleOptions);
               styleFs.init();
             }
             break;
