@@ -3,16 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fontsampler Auto Init — Universal Demo (Explicit Variations) — FIX</title>
-  <!-- Include fontsampler core -->
+  <title>Fontsampler Auto Init — Universal Demo (Explicit Variations) — FIX2</title>
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
-  
   <style>
     body { font-family: monospace; margin: 20px; line-height: 1.4; }
     .fsx-section { margin-bottom: 40px; max-width: 1200px; }
-    .fsx-title { margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; }
     .fsx-instances { margin: 20px 0; padding-top: 10px; border-top: 1px solid #ccc; }
     .fsx-instance-row { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
     .fsx-instance-label { width: 120px; font-size: 12px; flex-shrink: 0; }
@@ -68,10 +65,10 @@
       try {
         const url = new URL(fontUrl, document.baseURI);
         const pathname = url.pathname;
-        const jsonPath = pathname.replace(/\.[^.]+$/, ".json"); /* FIXED */
+        const jsonPath = pathname.replace(/\.[^.]+$/, ".json");
         return url.origin + jsonPath + url.search + url.hash;
       } catch (e) {
-        return fontUrl.replace(/\.[^.]+$/, ".json"); /* FIXED */
+        return fontUrl.replace(/\.[^.]+$/, ".json");
       }
     }
 
@@ -80,7 +77,7 @@
       if (!metaUrl) return fail("No metadata URL provided");
       try {
         const res = await fetch(metaUrl, { credentials: "same-origin" });
-        if (!res.ok) return fail(\`Failed to load metadata: \${res.status} \${res.statusText}\`);
+        if (!res.ok) return fail(`Failed to load metadata: ${res.status} ${res.statusText}`);
         const json = await res.json();
         if (!json || (!json.files && !Array.isArray(json.files))) {
           return fail("Invalid metadata: missing 'files' property");
@@ -88,7 +85,7 @@
         if (typeof json.files === 'string') json.files = [json.files];
         return json;
       } catch (err) {
-        return fail(\`Metadata fetch error: \${err.message || err}\`);
+        return fail(`Metadata fetch error: ${err.message || err}`);
       }
     }
 
@@ -154,7 +151,7 @@
     function instanceToVarSettings(instanceObj) {
       if (!instanceObj) return "";
       return Object.entries(instanceObj)
-        .map(([tag, value]) => \`'\${tag}' \${value}\`)
+        .map(([tag, value]) => `'${tag}' ${value}`)
         .join(", ");
     }
 
@@ -162,14 +159,14 @@
       const el = document.createElement("div");
       el.className = "fsx-error";
       el.setAttribute("role", "alert");
-      el.textContent = \`Error: \${message}\`;
+      el.textContent = `Error: ${message}`;
       node.appendChild(el);
     }
 
     async function ensureFontLoaded(meta) {
       try {
         const loads = (meta.files || []).map(async (url) => {
-          const ff = new FontFace(meta.name, \`url(\${url})\`);
+          const ff = new FontFace(meta.name, `url(${url})`);
           const loaded = await ff.load();
           document.fonts.add(loaded);
         });
@@ -194,7 +191,7 @@
         
         const label = document.createElement("span");
         label.className = "fsx-instance-label";
-        label.textContent = \`\${inst.name}:\`;
+        label.textContent = `${inst.name}:`;
         
         const sample = document.createElement("div");
         sample.className = "fsx-instance-sample";
@@ -217,7 +214,7 @@
           const root = sample.querySelector(".fsjs-root");
           if (root) root.style.display = "inline-block";
         } catch (err) {
-          sample.textContent = \`Error: \${err.message}\`;
+          sample.textContent = `Error: ${err.message}`;
           sample.style.color = "red";
         }
         
@@ -278,7 +275,8 @@
           case "multi": {
             const multiOptions = buildOptions(meta, { 
               multiline: true, 
-              initialText: "Multi-line text here...\nType more text to test the font.", 
+              initialText: "Multi-line text here...
+Type more text to test the font.", 
               sizePx: 24, 
               readonly: false,
               showSize: true,
@@ -292,7 +290,6 @@
           }
 
           case "styles": {
-            // Custom renderer: only SIZE control; explicit font-variation-settings per instance; no Fontsampler UI
             await ensureFontLoaded(meta);
 
             const instances = Array.isArray(meta.instances) ? meta.instances : [];
@@ -352,7 +349,7 @@
           }
         }
       } catch (err) {
-        showError(node, \`Fontsampler initialization failed: \${err.message}\`);
+        showError(node, `Fontsampler initialization failed: ${err.message}`);
       }
     }
 
