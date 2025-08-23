@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fonttester — demo5</title>
+
+  <!-- Fontsampler core (без скина и сторонних UI-библиотек) -->
+  <script src="https://cdn.jsdelivr.net/npm/fontsampler-js@0.1.4/dist/fontsampler.js"></script>
+
+  <style>
+    :root {
+      --gap: 16px;
+      --card-pad: 14px;
+      --border: 1px solid #e5e7eb;
+      --muted: #6b7280;
+      --error-bg: #ffecec;
+      --error-fg: #b00020;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji"; color: #111827; background: #fff; }
+    header { padding: 24px clamp(16px, 4vw, 40px); border-bottom: var(--border); }
+    header h1 { margin: 0 0 6px; font-size: clamp(20px, 3.5vw, 28px); }
+    header p { margin: 0; color: var(--muted); }
+
+    main { padding: 20px clamp(12px, 4vw, 40px); display: grid; gap: var(--gap); }
+    .fsx-grid { display: grid; gap: var(--gap); grid-template-columns: 1fr; }
+    @media (min-width: 900px) {
+      .fsx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .fsx-card { border: var(--border); border-radius: 14px; padding: var(--card-pad); background: #fff; }
+    .fsx-title { margin: 0 0 8px; font-weight: 600; font-size: 14px; color: #374151; letter-spacing: .02em; text-transform: uppercase; }
+    .fsx-subtle { color: var(--muted); font-size: 13px; }
+
+    /* Ошибки загрузки метаданных */
+    .fsx-error { color: var(--error-fg); background: var(--error-bg); border-left: 4px solid var(--error-fg); padding: 10px 12px; border-radius: 8px; }
+
+    /* Имя шрифта — фиксированный размер 220px, без контролов */
+    [id^="name_"] .fsjs-block-tester { font-size: 220px !important; line-height: .9; }
+    [id^="name_"] .fsjs-block-tester [contenteditable] { caret-color: transparent; }
+
+    /* Компактные отступы у «сырых» контролов Fontsampler */
+    .fsjs-block { margin: 8px 0; }
+    .fsjs-block-type-checkboxes label,
+    .fsjs-block-type-buttongroup button,
+    .fsjs-block select,
+    .fsjs-block input[type="range"] { font-size: 13px; }
+
+    /* Named Instances под главным сэмплером */
+    .fsx-instances { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .fsx-instances button {
+      border: var(--border); background: #fff; border-radius: 999px; padding: 6px 10px;
+      font: inherit; cursor: pointer;
+    }
+    .fsx-instances button[data-active="true"] { background: #111827; color: #fff; border-color: #111827; }
+
+    /* Элементы в Styles Sampler */
+    .fsx-style-item { border: var(--border); border-radius: 12px; padding: 10px; }
+    .fsx-style-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .fsx-style-head .name { font-weight: 600; }
+    .fsx-style-head .hint { color: var(--muted); font-size: 12px; }
+
+    /* Чтобы однострочный инпут реально оставался в 1 строку */
+    [data-singleline="true"] .fsjs-block-tester [contenteditable] { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Скромные подписи */
+    .fsx-footer-note { margin-top: 4px; color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Fonttester — демо</h1>
+    <p class="fsx-subtle">Автоинициализация по id: <code>name_*</code>, <code>main_sampler_*</code>, <code>sampler_*</code>, <code>styles_sampler_*</code>.</p>
+  </header>
+
+  <main class="fsx-grid">
+    <!-- ***** Пример для Archaism (JSON лежит рядом: Archaism.json) ***** -->
+    <section class="fsx-card">
+      <h2 class="fsx-title">Name Sampler</h2>
+      <div id="name_Archaism" class="fsx-node" aria-label="Name Sampler"></div>
+      <div class="fsx-footer-note">Фикс. размер 220px, без контролов.</div>
+    </section>
+
+    <section class="fsx-card">
+      <h2 class="fsx-title">Main Sampler</h2>
+      <div id="main_sampler_Archaism" class="fsx-node" aria-label="Main Sampler"></div>
+      <div class="fsx-footer-note">Однострочный ввод, только OpenType и оси. Ниже — Named Instances.</div>
+    </section>
+
+    <section class="fsx-card">
+      <h2 class="fsx-title">Multi-line Sampler</h2>
+      <div id="sampler_Archaism" class="fsx-node" aria-label="Multi-line Sampler"></div>
+      <div class="fsx-footer-note">Многострочный ввод, управляемые размер, OpenType и оси.</div>
+    </section>
+
+    <section class="fsx-card">
+      <h2 class="fsx-title">Styles Sampler</h2>
+      <div id="styles_sampler_Archaism" class="fsx-node" aria-label="Styles Sampler"></div>
+      <div class="fsx-footer-note">Каждая instance — своя строка и только свой слайдер размера. Оси фиксированы.</div>
+    </section>
+  </main>
+
+  <script type="module">
+    // -------------------------
+    //  Fonttester bootstrapping
+    // -------------------------
+
+    /** Кэш метаданных между блоками одной гарнитуры */
+    const META_CACHE = new Map();
+
+    /**
+     * resolveMetaUrl(fontKey, node)
+     * Возвращает URL JSON-метаданных:
+     *   1) data-meta на узле (абсолютный или относительный путь), иначе
+     *   2) <basename>.json рядом со страницей
+     */
+    function resolveMetaUrl(fontKey, node) {
+      const explicit = node?.dataset?.meta?.trim();
+      if (explicit) return explicit;
+      return `${fontKey}.json`;
+    }
+
+    /**
+     * loadMeta(url)
+     * Загружает и нормализует JSON-метаданные шрифта.
+     * Требует как минимум { name, files }.
+     */
+    async function loadMeta(url) {
+      const res = await fetch(url, { credentials: "omit" });
+      if (!res.ok) throw new Error(`Не удалось загрузить метаданные (${res.status} ${res.statusText})`);
+      const meta = await res.json();
+
+      // Нормализация
+      if (!meta || !meta.name || !meta.files) {
+        throw new Error("Некорректный JSON: требуются поля \"name\" и \"files\".");
+      }
+      meta.files = Array.isArray(meta.files) ? meta.files : [meta.files];
+      meta.axes = Array.isArray(meta.axes) ? meta.axes : [];
+      meta.features = Array.isArray(meta.features) ? meta.features : [];
+      meta.instances = Array.isArray(meta.instances) ? meta.instances : [];
+
+      return meta;
+    }
+
+    /**
+     * buildFonts(meta)
+     * Готовит массив fonts для Fontsampler.
+     * Если у шрифта есть значения осей по умолчанию — передаём как instance.
+     */
+    function buildFonts(meta, instanceOverride = null) {
+      const instance = instanceOverride || Object.fromEntries(
+        meta.axes
+          .filter(a => typeof a.default !== "undefined")
+          .map(a => [a.tag, a.default])
+      );
+      const font = {
+        name: meta.name,
+        files: meta.files,
+      };
+      if (Object.keys(instance).length) {
+        font.instance = instance;
+      }
+      // (необязательно) meta.features можно хранить отдельно в options.opentype.init
+      return [font];
+    }
+
+    /**
+     * buildOptions(meta, mode)
+     * mode: 'name' | 'main' | 'multiline' | 'style'
+     * Возвращает object для конструктора Fontsampler.
+     */
+    function buildOptions(meta, mode) {
+      const axisTags = meta.axes.map(ax => ax.tag);
+
+      // Определения слайдеров осей по JSON
+      const axisConfig = Object.fromEntries(
+        meta.axes.map(ax => [ax.tag, {
+          init: typeof ax.default === "number" ? ax.default : (ax.min ?? 0),
+          min: ax.min ?? 0,
+          max: ax.max ?? 1000,
+          step: ax.step ?? 1,
+          label: ax.label || ax.tag.toUpperCase(),
+        }])
+      );
+
+      // OpenType: показываем тумблеры только из JSON.features (по умолчанию выключены)
+      const otChoices = meta.features.map(f => `${f}|${f}`);
+      const opentype = {
+        choices: otChoices,
+        init: [], // не включаем по умолчанию
+        label: "OpenType features"
+      };
+
+      // Базовая конфигурация
+      const base = {
+        initialText: "",
+        multiline: true,
+        order: [],
+        config: {
+          tester: { editable: true, label: false },
+          fontsize: { unit: "px", init: 48, min: 8, max: 400, step: 1, label: "Size" },
+          opentype,
+          ...axisConfig
+        },
+        classes: {} // оставляем дефолтные классы
+      };
+
+      if (mode === "name") {
+        base.initialText = meta.name;
+        base.multiline = false;
+        base.order = ["tester"];           // никаких контролов
+        base.config.tester.editable = false;
+        return base;
+      }
+
+      if (mode === "main") {
+        base.initialText = meta.name;
+        base.multiline = false;            // однострочный
+        base.order = [
+          ["opentype"],                    // только OpenType
+          ...axisTags.map(t => [t]),       // и оси (каждая — своей «строкой»)
+          "tester"
+        ];
+        // Убираем контрол размера у главного сэмплера
+        delete base.config.fontsize;
+        return base;
+      }
+
+      if (mode === "multiline") {
+        base.initialText = "Multi-line text here... Type more text to test the font.";
+        base.multiline = true;
+        base.order = [
+          ["fontsize"],                    // размер обязателен
+          ["opentype"],
+          ...axisTags.map(t => [t]),
+          "tester"
+        ];
+        return base;
+      }
+
+      if (mode === "style") {
+        // Для каждой строки в Styles показываем только свой слайдер размера + поле
+        base.initialText = meta.name;
+        base.multiline = false;
+        base.order = [
+          ["fontsize"],
+          "tester"
+        ];
+        // Оси не рендерим — фиксируются через fonts[].instance
+        delete base.config.opentype;
+        return base;
+      }
+
+      return base;
+    }
+
+    /**
+     * createNamedInstancesDisplay(fs, meta, mountAfter)
+     * Рисует список Named Instances под главным сэмплером.
+     * По клику выставляет оси через FS.setValue(axisTag, value).
+     * (Метод из официального API.) */
+    function createNamedInstancesDisplay(fs, meta, mountAfter) {
+      if (!meta.instances?.length) return;
+
+      const wrap = document.createElement("div");
+      wrap.className = "fsx-instances";
+      wrap.setAttribute("role", "list");
+      wrap.setAttribute("aria-label", "Named Instances");
+
+      const axisTags = meta.axes.map(a => a.tag);
+
+      meta.instances.forEach((inst, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = inst.name || `Instance ${idx + 1}`;
+        btn.setAttribute("role", "listitem");
+
+        btn.addEventListener("click", () => {
+          // Сбрасываем «активность»
+          wrap.querySelectorAll("button").forEach(b => b.dataset.active = "false");
+          btn.dataset.active = "true";
+
+          // Проставляем значения осей (CSS font-variation-settings, не font-weight!)
+          axisTags.forEach(tag => {
+            if (inst.instance && typeof inst.instance[tag] !== "undefined") {
+              fs.setValue(tag, inst.instance[tag]); // из API Fontsampler
+            }
+          });
+        });
+
+        if (idx === 0) btn.dataset.active = "true";
+        wrap.appendChild(btn);
+      });
+
+      mountAfter.parentNode.insertBefore(wrap, mountAfter.nextSibling);
+    }
+
+    /**
+     * initNode(kind, node)
+     * Инициализирует конкретный контейнер одного из четырёх типов.
+     */
+    async function initNode(kind, node) {
+      const id = node.id;
+      const fontKey = id.replace(/^name_/, "")
+                        .replace(/^main_sampler_/, "")
+                        .replace(/^sampler_/, "")
+                        .replace(/^styles_sampler_/, "");
+      const metaUrl = resolveMetaUrl(fontKey, node);
+
+      // Загружаем/берём из кэша мету
+      let meta = META_CACHE.get(metaUrl);
+      if (!meta) {
+        try {
+          meta = await loadMeta(metaUrl);
+          META_CACHE.set(metaUrl, meta);
+        } catch (err) {
+          node.innerHTML = `<div class="fsx-error">Ошибка: ${err.message}<br><span class="fsx-subtle">${metaUrl}</span></div>`;
+          return;
+        }
+      }
+
+      try {
+        if (kind === "name") {
+          const fonts = buildFonts(meta);
+          const options = buildOptions(meta, "name");
+          const fs = new Fontsampler(node, fonts, options);
+          fs.init();
+          node.setAttribute("data-singleline", "true");
+          return;
+        }
+
+        if (kind === "main") {
+          const fonts = buildFonts(meta);
+          const options = buildOptions(meta, "main");
+          const fs = new Fontsampler(node, fonts, options);
+          fs.init();
+          node.setAttribute("data-singleline", "true");
+          // Named Instances под блоком
+          createNamedInstancesDisplay(fs, meta, node);
+          return;
+        }
+
+        if (kind === "multiline") {
+          const fonts = buildFonts(meta);
+          const options = buildOptions(meta, "multiline");
+          const fs = new Fontsampler(node, fonts, options);
+          fs.init();
+          return;
+        }
+
+        if (kind === "styles") {
+          // Для каждой instance — свой вложенный FS
+          const list = meta.instances.length ? meta.instances : [{ name: "Default", instance: {} }];
+          node.innerHTML = ""; // чистим
+          list.forEach((inst, i) => {
+            const item = document.createElement("div");
+            item.className = "fsx-style-item";
+
+            const head = document.createElement("div");
+            head.className = "fsx-style-head";
+            head.innerHTML = `<span class="name">${inst.name || `Instance ${i+1}`}</span>
+                              <span class="hint">font-variation-settings из JSON</span>`;
+            const inner = document.createElement("div");
+            inner.id = `${node.id}__i${i}`;
+
+            item.appendChild(head);
+            item.appendChild(inner);
+            node.appendChild(item);
+
+            const fonts = buildFonts(meta, inst.instance || {});
+            const options = buildOptions(meta, "style");
+            const fs = new Fontsampler(inner, fonts, options);
+            fs.init();
+            inner.setAttribute("data-singleline", "true");
+          });
+          return;
+        }
+      } catch (err) {
+        node.innerHTML = `<div class="fsx-error">Инициализация не удалась: ${err.message}</div>`;
+      }
+    }
+
+    /**
+     * initAll()
+     * Находит все подходящие div и инициализирует их в нужном режиме.
+     */
+    function initAll() {
+      // name_*
+      document.querySelectorAll('div[id^="name_"]').forEach(node => initNode("name", node));
+      // main_sampler_*
+      document.querySelectorAll('div[id^="main_sampler_"]').forEach(node => initNode("main", node));
+      // sampler_* (многострочный)
+      document.querySelectorAll('div[id^="sampler_"]').forEach(node => initNode("multiline", node));
+      // styles_sampler_*
+      document.querySelectorAll('div[id^="styles_sampler_"]').forEach(node => initNode("styles", node));
+    }
+
+    // Автостарт
+    window.addEventListener("DOMContentLoaded", initAll);
+  </script>
+</body>
+</html>
