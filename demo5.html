@@ -400,13 +400,16 @@
         switch (type) {
           case "name":
             // Readonly name display
-            const nameOptions = buildOptions(meta, { 
-              multiline: false, 
-              initialText: meta.name || "Font Name", 
-              sizePx: 200, 
-              readonly: true,
-              showSize: false 
-            });
+            const nameOptions = {
+              initialText: meta.name || "Font Name",
+              multiline: false,
+              lazyload: false,
+              config: {
+                tester: { editable: false, label: false }
+              },
+              order: ["tester"],
+              classes: { rootClass: "fsjs-skin" }
+            };
             
             const nameFs = new Fontsampler(node, buildFonts(meta), nameOptions);
             nameFs.init();
