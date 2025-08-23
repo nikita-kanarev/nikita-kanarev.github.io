@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fontsampler auto-init demo</title>
+  <!--
+    Dependencies (adjust paths to where you host them):
+      - fontsampler.js        (required)
+      - fontsampler-skin.js   (optional, for nicer UI)
+      - fontsampler-skin.css  (optional, for nicer UI)
+
+    If you install via npm, the default paths are:
+      node_modules/fontsampler-js/dist/fontsampler.js
+      node_modules/fontsampler-js/dist/fontsampler-skin.js
+      node_modules/fontsampler-js/dist/fontsampler-skin.css
+
+    Or load from a CDN that mirrors npm packages.
+  -->
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
+  
+  <style>
+    :root { --gap: 1rem; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; }
+    h2 { margin: 2rem 0 0.5rem; }
+    .grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .block { border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .muted { color: #6b7280; }
+    .error { color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; padding: .5rem .75rem; border-radius: 8px; margin-top: .5rem; }
+
+    /* Named Instances list under the main sampler */
+    .fs-named-list { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+    .fs-tag { font-size: .875rem; line-height: 1; padding: .5rem .6rem; border-radius: 9999px; border: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; }
+    .fs-tag:hover { background: #f3f4f6; }
+
+    /* Tiny helper for per-instance testers in the styles sampler */
+    .style-row { border: 1px dashed #e5e7eb; border-radius: 10px; padding: .75rem; }
+    .style-row + .style-row { margin-top: .75rem; }
+
+    /* Make Fontsampler's textarea look nice inside our block */
+    .fontsamplerjs .fsjs-block-tester [contenteditable] { min-height: 2.25em; }
+  </style>
+</head>
+<body>
+  <h1>Auto-initialized testers (fontsampler-js)</h1>
+  <p class="muted">Drop this file next to <code>Archaism.json</code> (or any other <code>*.json</code> with the same structure) and open it in a browser. The script scans the page and initializes all testers automatically.</p>
+
+  <!--
+    Example markup for a single font family "Archaism".
+    The only thing you write in HTML is the ID naming — the script infers the font key from it.
+
+    Supported ID patterns (XXX is your font key):
+      - name_XXX               → readonly name tester
+      - main_sampler_XXX       → single-line tester (axes + opentype, size hidden but applied)
+      - sampler_XXX            → multi-line tester (size + axes + opentype)
+      - styles_sampler_XXX     → one single-line tester per Named Instance (with size control)
+
+    Minimal attributes:
+      - data-meta (optional): URL to the JSON metadata. If omitted, defaults to "./XXX.json" next to this HTML file.
+      - data-size (optional):  Override default sizes (px) per tester.
+      - data-placeholder (optional on main & multi): initial text.
+  -->
+
+  <div class="grid">
+    <div class="block">
+      <h2>Name tester</h2>
+      <div id="name_Archaism" data-size="220"></div>
+    </div>
+
+    <div class="block">
+      <h2>Main single-line tester</h2>
+      <div id="main_sampler_Archaism" data-placeholder="Type here…" data-size="80"></div>
+      <div class="muted" style="margin-top:.5rem">Named Instances appear below (click to apply to the main line)</div>
+    </div>
+
+    <div class="block">
+      <h2>Multi-line tester</h2>
+      <div id="sampler_Archaism" data-placeholder="Multi-line text here… Type more text to test the font." data-size="36"></div>
+    </div>
+
+    <div class="block">
+      <h2>Styles sampler (one per Named Instance)</h2>
+      <div id="styles_sampler_Archaism" data-size="64"></div>
+    </div>
+  </div>
+
+  <!-- Fontsampler library (required) -->
+  <script src="node_modules/fontsampler-js/dist/fontsampler.js"></script>
+  <!-- Optional UI skin (nicer controls) -->
+  <script src="node_modules/fontsampler-js/dist/fontsampler-skin.js"></script>
+
+  <!-- Auto-discovery + initialization script -->
+  <script>
+    (function () {
+      'use strict';
+
+      if (typeof window.Fontsampler === 'undefined') {
+        console.error('[fontsampler-auto] fontsampler.js not found. Include the library before this script.');
+        return;
+      }
+
+      /**
+       * ID prefixes → tester types
+       */
+      var PREFIX = {
+        name: 'name_',
+        main: 'main_sampler_',
+        multi: 'sampler_',
+        styles: 'styles_sampler_'
+      };
+
+      function getFontKeyFromId(id) {
+        for (var key in PREFIX) {
+          if (Object.prototype.hasOwnProperty.call(PREFIX, key)) {
+            var p = PREFIX[key];
+            if (id.indexOf(p) === 0) return id.slice(p.length);
+          }
+        }
+        return null;
+      }
+
+      function el(tag, attrs, children) {
+        var node = document.createElement(tag);
+        if (attrs) {
+          for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) {
+            if (k === 'class') node.className = attrs[k];
+            else if (k === 'text') node.textContent = attrs[k];
+            else node.setAttribute(k, attrs[k]);
+          }
+        }
+        if (children && children.length) children.forEach(function (c) { node.appendChild(c); });
+        return node;
+      }
+
+      function showError(container, msg) {
+        var box = el('div', { class: 'error' });
+        box.textContent = '[fontsampler-auto] ' + msg;
+        container.appendChild(box);
+      }
+
+      /**
+       * Load JSON metadata for a font key.
+       * Priority: container[data-meta] → ./KEY.json
+       */
+      function loadMeta(fontKey, sampleElement) {
+        var overrideUrl = sampleElement && sampleElement.getAttribute('data-meta');
+        var url = overrideUrl || (fontKey + '.json');
+        return fetch(url, { credentials: 'same-origin' })
+          .then(function (res) { if (!res.ok) throw new Error('Failed to fetch ' + url + ' (' + res.status + ')'); return res.json(); })
+          .then(function (meta) {
+            // Normalise format to what we expect
+            meta = meta || {};
+            meta.name = meta.name || fontKey;
+            // files can be string or array
+            var files = meta.files;
+            if (typeof files === 'string') meta.files = [files];
+            else if (Array.isArray(files)) meta.files = files;
+            else meta.files = [];
+            meta.axes = Array.isArray(meta.axes) ? meta.axes : [];
+            meta.features = Array.isArray(meta.features) ? meta.features : [];
+            meta.instances = Array.isArray(meta.instances) ? meta.instances : [];
+            return meta;
+          });
+      }
+
+      /** Build options.order and options.config from metadata */
+      function buildOptions(meta, opts) {
+        opts = opts || {};
+        var order = [];
+        var config = {
+          tester: { editable: true, label: false },
+          fontsize: { unit: 'px', init: 18, min: 12, max: 160, step: 1, label: 'Size' },
+          opentype: null // set below if any features
+        };
+
+        // Features → opentype checkboxes
+        if (meta.features && meta.features.length) {
+          config.opentype = {
+            // "tag|LABEL" pairs; use tag uppercased as a sane default label
+            choices: meta.features.map(function (t) { return t + '|' + t.toUpperCase(); }),
+            init: [],
+            label: 'OpenType features'
+          };
+        }
+
+        // Variable axes → sliders with labels & min/max/step
+        var axisTags = [];
+        meta.axes.forEach(function (axis) {
+          var tag = axis.tag;
+          axisTags.push(tag);
+          config[tag] = {
+            init: typeof axis.default === 'number' ? axis.default : (typeof axis.min === 'number' ? axis.min : 0),
+            min: typeof axis.min === 'number' ? axis.min : 0,
+            max: typeof axis.max === 'number' ? axis.max : 1000,
+            step: typeof axis.step === 'number' ? axis.step : 1,
+            label: axis.label || tag
+          };
+        });
+
+        return { order: order, config: config, axisTags: axisTags };
+      }
+
+      /** Create a Fontsampler instance safely */
+      function createFS(container, fonts, options) {
+        try {
+          var fs = window.Fontsampler(container, fonts, options);
+          if (window.FontsamplerSkin) window.FontsamplerSkin(fs); // graceful if not loaded
+          fs.init();
+          return fs;
+        } catch (e) {
+          showError(container, e.message);
+          throw e;
+        }
+      }
+
+      /** Initialize the readonly name tester */
+      function initName(container, meta) {
+        var base = buildOptions(meta);
+        base.order = ['tester'];
+        base.config.tester.editable = false;
+        // Font size from data-size or default 220
+        var size = parseInt(container.getAttribute('data-size') || '220', 10);
+        base.config.fontsize.init = size;
+        var options = {
+          initialText: meta.name,
+          multiline: false,
+          order: base.order,
+          config: base.config
+        };
+        var fonts = [{ name: meta.name, files: meta.files }];
+        createFS(container, fonts, options);
+      }
+
+      /** Initialize the main single-line tester */
+      function initMain(container, meta) {
+        var base = buildOptions(meta);
+        // Controls: axes + opentype, NO visible size control
+        var row = [];
+        if (base.config.opentype) row.push('opentype');
+        // append all axis tags
+        base.axisTags.forEach(function (t) { row.push(t); });
+        base.order = [row, 'tester'];
+
+        // size defaults to 80px but hidden (we still set the value)
+        var size = parseInt(container.getAttribute('data-size') || '80', 10);
+        base.config.fontsize.init = size; // applied although not rendered
+
+        var options = {
+          initialText: container.getAttribute('data-placeholder') || 'Type here…',
+          multiline: false,
+          order: base.order,
+          config: base.config
+        };
+
+        var fonts = [{ name: meta.name, files: meta.files }];
+        var fs = createFS(container, fonts, options);
+
+        // Named instances list (click → apply to main sampler)
+        if (meta.instances && meta.instances.length) {
+          var list = el('div', { class: 'fs-named-list' });
+          meta.instances.forEach(function (inst) {
+            var label = inst.name || 'Instance';
+            var summary = Object.keys(inst.instance || {}).map(function (k) { return k + '=' + inst.instance[k]; }).join(', ');
+            var btn = el('button', { class: 'fs-tag', type: 'button', title: summary, text: label });
+            btn.addEventListener('click', function () {
+              var axes = inst.instance || {};
+              Object.keys(axes).forEach(function (tag) { fs.setValue(tag, axes[tag]); });
+            });
+            list.appendChild(btn);
+          });
+          container.appendChild(list);
+        }
+      }
+
+      /** Initialize the multi-line tester */
+      function initMulti(container, meta) {
+        var base = buildOptions(meta);
+        var row = ['fontsize'];
+        if (base.config.opentype) row.push('opentype');
+        base.axisTags.forEach(function (t) { row.push(t); });
+        base.order = [row, 'tester'];
+
+        // Use data-size or 36px as initial size
+        var size = parseInt(container.getAttribute('data-size') || '36', 10);
+        base.config.fontsize.init = size;
+
+        var options = {
+          initialText: container.getAttribute('data-placeholder') || 'Multi-line text here… Type more text to test the font.',
+          multiline: true,
+          order: base.order,
+          config: base.config
+        };
+        var fonts = [{ name: meta.name, files: meta.files }];
+        createFS(container, fonts, options);
+      }
+
+      /** Initialize the Styles sampler: one FS per Named Instance */
+      function initStyles(container, meta) {
+        if (!meta.instances || !meta.instances.length) {
+          showError(container, 'No Named Instances in metadata.');
+          return;
+        }
+        var base = buildOptions(meta);
+        // For each named instance create its own FS row with size + tester
+        var holder = el('div');
+        meta.instances.forEach(function (inst) {
+          var row = el('div', { class: 'style-row' });
+          var heading = el('div', { class: 'muted', text: inst.name || 'Instance' });
+          row.appendChild(heading);
+
+          var options = {
+            initialText: container.getAttribute('data-placeholder') || 'Type to preview this instance…',
+            multiline: false,
+            order: [['fontsize'], 'tester'],
+            config: base.config
+          };
+
+          // Use data-size or 64px for per-instance testers
+          var size = parseInt(container.getAttribute('data-size') || '64', 10);
+          options.config = Object.assign({}, base.config, { fontsize: Object.assign({}, base.config.fontsize, { init: size }) });
+
+          var fonts = [{ name: meta.name, files: meta.files, instance: inst.instance || {} }];
+          var sub = el('div');
+          row.appendChild(sub);
+          createFS(sub, fonts, options);
+          holder.appendChild(row);
+        });
+        container.appendChild(holder);
+      }
+
+      /** Scan document for all tester containers and bootstrap them */
+      function bootstrap() {
+        var allSelectors = ['[id^="' + PREFIX.name + '"]', '[id^="' + PREFIX.main + '"]', '[id^="' + PREFIX.multi + '"]', '[id^="' + PREFIX.styles + '"]'].join(',');
+        var nodes = Array.prototype.slice.call(document.querySelectorAll(allSelectors));
+        if (!nodes.length) return;
+
+        // Group nodes by font key so we only fetch the JSON once per family
+        var byKey = new Map();
+        nodes.forEach(function (node) {
+          var key = getFontKeyFromId(node.id);
+          if (!key) return; // ignore
+          if (!byKey.has(key)) byKey.set(key, { nodes: { name: [], main: [], multi: [], styles: [] }, anyNode: node });
+          var group = byKey.get(key);
+          if (node.id.indexOf(PREFIX.name) === 0) group.nodes.name.push(node);
+          else if (node.id.indexOf(PREFIX.main) === 0) group.nodes.main.push(node);
+          else if (node.id.indexOf(PREFIX.multi) === 0) group.nodes.multi.push(node);
+          else if (node.id.indexOf(PREFIX.styles) === 0) group.nodes.styles.push(node);
+        });
+
+        // For each font key, load its metadata and initialize relevant testers
+        byKey.forEach(function (group, key) {
+          loadMeta(key, group.anyNode).then(function (meta) {
+            // NAME
+            group.nodes.name.forEach(function (el) { try { initName(el, meta); } catch (e) {} });
+            // MAIN
+            group.nodes.main.forEach(function (el) { try { initMain(el, meta); } catch (e) {} });
+            // MULTI
+            group.nodes.multi.forEach(function (el) { try { initMulti(el, meta); } catch (e) {} });
+            // STYLES
+            group.nodes.styles.forEach(function (el) { try { initStyles(el, meta); } catch (e) {} });
+          }).catch(function (err) {
+            // Show an error on each container for this font key
+            Object.keys(group.nodes).forEach(function (k) {
+              group.nodes[k].forEach(function (el) { showError(el, err.message); });
+            });
+          });
+        });
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
+      else bootstrap();
+    })();
+  </script>
+</body>
+</html>
