@@ -3,75 +3,78 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fontsampler Auto Init — Universal Demo</title>
+  <title>Fontsampler Auto Init — Universal Demo (Explicit Variations)</title>
   <!-- Include fontsampler core -->
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
-
+  
   <style>
-    /* Minimal styling */
     body { 
       font-family: monospace; 
       margin: 20px; 
       line-height: 1.4;
     }
-
+    
     .fsx-section { 
       margin-bottom: 40px; 
       max-width: 1200px;
     }
-
+    
     .fsx-title { 
       margin: 20px 0 10px 0; 
       font-size: 14px;
       font-weight: bold;
     }
-
-    /* Named instances display */
+    
+    /* Named instances under main sampler */
     .fsx-instances { 
       margin: 20px 0;
       padding-top: 10px;
       border-top: 1px solid #ccc;
     }
-
+    
     .fsx-instance-row {
       margin: 10px 0;
       display: flex;
       align-items: center;
       gap: 10px;
     }
-
+    
     .fsx-instance-label {
       width: 120px;
       font-size: 12px;
       flex-shrink: 0;
     }
-
+    
     .fsx-instance-sample {
-      font-size: 88px;  /* крупные мини-пробы */
+      font-size: 88px;
       line-height: 1;
       margin-left: 10px;
       min-width: 200px;
     }
-
-    /* важно: корень мини-инстанса в одну строку, чтобы не ломать флекс */
-    .fsx-instance-row .fsjs-root { 
-      display: inline-block; 
-    }
-
-    /* Style testers */
-    .fsx-style-item { 
-      margin: 20px 0; 
-    }
-
-    .fsx-style-name { 
+    .fsx-instance-row .fsjs-root { display: inline-block; }
+    
+    /* Styles sampler (custom, no opentype/axis controls) */
+    .fsx-styles-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0 12px;
+      border-bottom: 1px dashed #ddd;
+      margin-bottom: 12px;
       font-size: 12px;
-      margin: 5px 0; 
-      font-weight: bold;
+    }
+    .fsx-style-item { margin: 20px 0; }
+    .fsx-style-name { font-size: 12px; margin: 5px 0; font-weight: bold; }
+    .fsx-style-sample {
+      line-height: 1;
+      letter-spacing: 0;
+      text-align: left;
+      /* font properties will be set inline by JS to avoid overrides */
     }
 
-    /* Error display */
+    /* Error */
     .fsx-error {
       color: red;
       border: 1px solid red;
@@ -80,70 +83,51 @@
       font-size: 12px;
     }
 
-    /* name_* — без контролов, фиксируем размер 220px */
+    /* name_* — no controls, fixed size 220px */
     [id^="name_"] .fsjs-control-group { display: none !important; }
     [id^="name_"] .fsjs-tester { font-size: 220px; line-height: 1; }
 
-    /* убрать контролы у мини-проб инстансов в блоке main_sampler_* (мы рендерим кастомно, но на всякий случай) */
+    /* hide controls inside the small Named Instances list */
     .fsx-instances .fsjs-control-fontsize,
     .fsx-instances .fsjs-control-opentype,
     .fsx-instances .fsjs-control-axis {
       display: none !important;
     }
-
-    /* Стили для кастомного styles_sampler: только размер */
-    .fsx-styles-root { border-top: 1px solid #ccc; padding-top: 10px; }
-    .fsx-size-ctrl { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .fsx-size-ctrl label { font-size: 12px; }
-    .fsx-style-row { margin: 14px 0; }
-    .fsx-style-name { font-size: 12px; margin-bottom: 4px; font-weight: bold; }
-    .fsx-style-sample { font-size: 32px; line-height: 1; letter-spacing: 0em; text-align: left; }
   </style>
 </head>
 <body>
-
-  <!-- Demo HTML Markup -->
-  <!-- Multiple fonts can be used on the same page -->
-
   <div class="fsx-section">
-
     <h2>Name</h2>
     <div id="name_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
-
+    
     <h2>Main Sampler</h2>
     <div id="main_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
-
+    
     <h2>Sampler</h2>
     <div id="sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
-
+    
     <h2>Styles Sampler</h2>    
     <div id="styles_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
-
   </div>
-
 
   <div class="fsx-section">
-
     <h2>Name</h2>
     <div id="name_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
-
+    
     <h2>Main Sampler</h2>
     <div id="main_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
-
+    
     <h2>Sampler</h2>
     <div id="sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
-
+    
     <h2>Styles Sampler</h2>    
     <div id="styles_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
-
   </div>
-
-  <!-- Auto Initializer Script -->
+  
   <script>
   (function () {
     "use strict";
 
-    // ID patterns for different tester types
     const PATTERNS = {
       NAME: /^name_(.+)$/,
       MAIN: /^main_sampler_(.+)$/,
@@ -156,10 +140,10 @@
       try {
         const url = new URL(fontUrl, document.baseURI);
         const pathname = url.pathname;
-        const jsonPath = pathname.replace(/\.[^.]+$/, ".json");
+        const jsonPath = pathname.replace(/\\.[^.]+$/, ".json");
         return url.origin + jsonPath + url.search + url.hash;
       } catch (e) {
-        return fontUrl.replace(/\.[^.]+$/, ".json");
+        return fontUrl.replace(/\\.[^.]+$/, ".json");
       }
     }
 
@@ -181,10 +165,7 @@
     }
 
     function buildFonts(meta, instanceOverride = null) {
-      const base = { 
-        name: meta.name || "Unknown Font", 
-        files: meta.files 
-      };
+      const base = { name: meta.name || "Unknown Font", files: meta.files };
       if (instanceOverride) base.instance = instanceOverride;
       return [base];
     }
@@ -203,30 +184,19 @@
     ) {
       const order = [];
       const config = {};
-
-      // Content area (tester)
       order.push("tester");
       config.tester = { editable: !readonly, label: false };
 
-      // Size control (optional)
       if (showSize) {
         order.unshift(["fontsize"]);
-        config.fontsize = { 
-          unit: "px", init: sizePx, min: 8, max: 256, step: 1, label: "Size" 
-        };
+        config.fontsize = { unit: "px", init: sizePx, min: 8, max: 256, step: 1, label: "Size" };
       }
 
-      // OpenType features (optional)
       if (includeFeatures && Array.isArray(meta.features) && meta.features.length) {
         order.push(["opentype"]);
-        config.opentype = { 
-          choices: meta.features, 
-          init: meta.features.includes('liga') ? ['liga'] : [], 
-          label: "Features" 
-        };
+        config.opentype = { choices: meta.features, init: meta.features.includes('liga') ? ['liga'] : [], label: "Features" };
       }
 
-      // Variable font axes (optional)
       if (includeAxes && Array.isArray(meta.axes) && meta.axes.length) {
         const axisRow = [];
         for (const axis of meta.axes) {
@@ -253,48 +223,11 @@
       };
     }
 
-    // --- helpers: вариативные оси
-    function instanceToVarSettings(instanceObj, omitTags = []) {
+    function instanceToVarSettings(instanceObj) {
       if (!instanceObj) return "";
       return Object.entries(instanceObj)
-        .filter(([tag]) => !omitTags.includes(tag))
         .map(([tag, value]) => \`'\${tag}' \${value}\`)
         .join(", ");
-    }
-
-    function applyInstanceAxes(el, instanceObj) {
-      if (!el || !instanceObj) return;
-      // wght — задаём через font-weight, чтобы он не был переопределён
-      if ("wght" in instanceObj) {
-        el.style.fontWeight = String(instanceObj.wght);
-      } else {
-        el.style.fontWeight = "normal";
-      }
-      // opsz — отключим авто-оптику, если задаём вручную
-      if ("opsz" in instanceObj) {
-        el.style.fontOpticalSizing = "none";
-      }
-      // Остальные оси применяем через font-variation-settings
-      const omit = ["wght"]; // 'wght' задаём отдельным свойством
-      const fvs = instanceToVarSettings(instanceObj, omit);
-      if (fvs) {
-        el.style.fontVariationSettings = fvs;
-      } else {
-        el.style.fontVariationSettings = "normal";
-      }
-    }
-
-    async function ensureFontLoaded(meta) {
-      // Загружаем первое указание файла самостоятельно, чтобы использовать семейство meta.name в кастомных блоках
-      const src = Array.isArray(meta.files) ? meta.files[0] : meta.files;
-      if (!src) return;
-      try {
-        const face = new FontFace(meta.name, \`url(\${src})\`);
-        const loaded = await face.load();
-        document.fonts.add(loaded);
-      } catch (e) {
-        // swallow
-      }
     }
 
     function showError(node, message) {
@@ -305,110 +238,75 @@
       node.appendChild(el);
     }
 
-    // --- Кастомный список инстансов для main_sampler_* (без Fontsampler внутри)
+    // Load font via FontFace API (independent from Fontsampler), so we can use it in custom blocks
+    async function ensureFontLoaded(meta) {
+      try {
+        const loads = (meta.files || []).map(async (url) => {
+          const ff = new FontFace(meta.name, \`url(\${url})\`);
+          const loaded = await ff.load();
+          document.fonts.add(loaded);
+        });
+        await Promise.all(loads);
+      } catch (e) {
+        // Non-fatal; font may still be loaded by other samplers
+        console.warn("FontFace load warning:", e);
+      }
+    }
+
     function createNamedInstancesDisplay(container, instances, meta) {
       if (!instances || !instances.length) return;
-
       const instancesContainer = document.createElement("div");
       instancesContainer.className = "fsx-instances";
-
       const title = document.createElement("div");
       title.textContent = "Named Instances:";
       title.style.cssText = "font-size: 12px; font-weight: bold; margin-bottom: 10px;";
       instancesContainer.appendChild(title);
-
+      
       for (const inst of instances) {
         const row = document.createElement("div");
         row.className = "fsx-instance-row";
-
+        
         const label = document.createElement("span");
         label.className = "fsx-instance-label";
         label.textContent = \`\${inst.name}:\`;
-
+        
         const sample = document.createElement("div");
         sample.className = "fsx-instance-sample";
-        sample.textContent = inst.name;
 
-        // применяем семейство и вариативные оси напрямую
-        sample.style.fontFamily = meta.name || "sans-serif";
-        applyInstanceAxes(sample, inst.instance);
+        const instanceOptions = {
+          initialText: inst.name,
+          multiline: false,
+          lazyload: false,
+          config: { tester: { editable: false, label: false } },
+          order: ["tester"],
+          classes: { rootClass: "fsjs-skin" }
+        };
+        
+        try {
+          const fonts = buildFonts(meta, inst.instance);
+          const fs = new Fontsampler(sample, fonts, instanceOptions);
+          FontsamplerSkin(fs);
+          fs.init();
 
+          const root = sample.querySelector(".fsjs-root");
+          if (root) root.style.display = "inline-block";
+        } catch (err) {
+          sample.textContent = \`Error: \${err.message}\`;
+          sample.style.color = "red";
+        }
+        
         row.appendChild(label);
         row.appendChild(sample);
         instancesContainer.appendChild(row);
       }
-
+      
       container.appendChild(instancesContainer);
-    }
-
-    // --- Кастомный styles_sampler_*: только контрол размера + список инстансов
-    function renderStylesSampler(node, meta) {
-      const root = document.createElement("div");
-      root.className = "fsx-styles-root";
-
-      // контрол размера
-      const ctrl = document.createElement("div");
-      ctrl.className = "fsx-size-ctrl";
-      const label = document.createElement("label");
-      label.textContent = "Size";
-      const input = document.createElement("input");
-      input.type = "range";
-      input.min = "8";
-      input.max = "256";
-      input.step = "1";
-      input.value = "32";
-      const val = document.createElement("span");
-      val.textContent = "32px";
-      ctrl.appendChild(label);
-      ctrl.appendChild(input);
-      ctrl.appendChild(val);
-      root.appendChild(ctrl);
-
-      const instances = Array.isArray(meta.instances) ? meta.instances : [];
-      if (!instances.length) {
-        showError(node, "No named instances defined in metadata");
-        node.appendChild(root);
-        return;
-      }
-
-      // список инстансов
-      const rows = [];
-      for (const inst of instances) {
-        const row = document.createElement("div");
-        row.className = "fsx-style-row";
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "fsx-style-name";
-        nameEl.textContent = inst.name;
-
-        const sample = document.createElement("div");
-        sample.className = "fsx-style-sample";
-        sample.textContent = inst.name;
-
-        // напрямую применяем семейство и оси
-        sample.style.fontFamily = meta.name || "sans-serif";
-        applyInstanceAxes(sample, inst.instance);
-
-        row.appendChild(nameEl);
-        row.appendChild(sample);
-        root.appendChild(row);
-        rows.push(sample);
-      }
-
-      // изменение размера
-      input.addEventListener("input", () => {
-        const px = input.value + "px";
-        val.textContent = px;
-        rows.forEach(el => { el.style.fontSize = px; });
-      });
-
-      node.appendChild(root);
     }
 
     async function initNode(node, type) {
       const fontUrl = node.getAttribute("data-font");
       if (!fontUrl) { showError(node, "Missing data-font attribute"); return; }
-
+      
       const metaUrl = node.getAttribute("data-meta") || resolveMetaUrl(fontUrl);
       const meta = await loadMeta(metaUrl);
       if (meta.error) { showError(node, meta.message); return; }
@@ -416,7 +314,6 @@
       try {
         switch (type) {
           case "name": {
-            // Readonly name display (фикс. размер 220px через CSS)
             const nameOptions = {
               initialText: meta.name || "Font Name",
               multiline: false,
@@ -428,10 +325,8 @@
             const nameFs = new Fontsampler(node, buildFonts(meta), nameOptions);
             FontsamplerSkin(nameFs);
             nameFs.init();
-            // на всякий случай — нормальный вес
             const tester = node.querySelector(".fsjs-tester");
             if (tester) tester.style.fontWeight = "normal";
-            await ensureFontLoaded(meta);
             break;
           }
 
@@ -448,8 +343,6 @@
             const mainFs = new Fontsampler(node, buildFonts(meta), mainOptions);
             FontsamplerSkin(mainFs);
             mainFs.init();
-            await ensureFontLoaded(meta);
-            // Кастомный список инстансов без Fontsampler внутри
             setTimeout(() => {
               createNamedInstancesDisplay(node, meta.instances, meta);
             }, 100);
@@ -459,7 +352,7 @@
           case "multi": {
             const multiOptions = buildOptions(meta, { 
               multiline: true, 
-              initialText: "Multi-line text here...\nType more text to test the font.", 
+              initialText: "Multi-line text here...\\nType more text to test the font.", 
               sizePx: 24, 
               readonly: false,
               showSize: true,
@@ -469,14 +362,70 @@
             const multiFs = new Fontsampler(node, buildFonts(meta), multiOptions);
             FontsamplerSkin(multiFs);
             multiFs.init();
-            await ensureFontLoaded(meta);
             break;
           }
 
           case "styles": {
-            // Полностью кастомный рендер: только размер, инстансы применяются напрямую, без Fontsampler.
+            // Custom renderer: only SIZE control; explicit font-variation-settings per instance; no Fontsampler UI
             await ensureFontLoaded(meta);
-            renderStylesSampler(node, meta);
+
+            const instances = Array.isArray(meta.instances) ? meta.instances : [];
+            if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
+
+            // Top toolbar with a single Size slider (affects all samples in this block)
+            const toolbar = document.createElement("div");
+            toolbar.className = "fsx-styles-toolbar";
+            const label = document.createElement("label");
+            label.textContent = "Size";
+            label.setAttribute("for", node.id + "_size");
+            const slider = document.createElement("input");
+            slider.type = "range";
+            slider.min = "8";
+            slider.max = "256";
+            slider.step = "1";
+            slider.value = "32";
+            slider.id = node.id + "_size";
+            const val = document.createElement("span");
+            val.textContent = slider.value + "px";
+            toolbar.appendChild(label);
+            toolbar.appendChild(slider);
+            toolbar.appendChild(val);
+            node.appendChild(toolbar);
+
+            const samples = [];
+            slider.addEventListener("input", () => {
+              val.textContent = slider.value + "px";
+              for (const s of samples) {
+                s.style.fontSize = slider.value + "px";
+              }
+            });
+
+            for (const inst of instances) {
+              const wrapper = document.createElement("div");
+              wrapper.className = "fsx-style-item";
+              
+              const nameEl = document.createElement("div");
+              nameEl.className = "fsx-style-name";
+              nameEl.textContent = inst.name;
+              
+              const sample = document.createElement("div");
+              sample.className = "fsx-style-sample";
+              sample.textContent = inst.name;
+
+              // Explicit, unambiguous font styling
+              sample.style.fontFamily = meta.name || "inherit";
+              sample.style.fontSize = slider.value + "px";
+              sample.style.fontWeight = "normal";   // avoid implying 'wght'
+              sample.style.fontStyle = "normal";
+              sample.style.fontStretch = "normal";
+              const fv = instanceToVarSettings(inst.instance);
+              if (fv) sample.style.fontVariationSettings = fv;
+
+              wrapper.appendChild(nameEl);
+              wrapper.appendChild(sample);
+              node.appendChild(wrapper);
+              samples.push(sample);
+            }
             break;
           }
         }
@@ -512,8 +461,7 @@
   })();
   </script>
 
-  <!-- 
-  Пример JSON:
+  <!-- JSON example (for reference)
   {
     "name": "Archaism",
     "files": "https://nikita-kanarev.github.io/Archaism.woff2",
