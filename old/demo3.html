@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fontsampler Auto Init — Demo (Fixed)</title>
+  <!-- External dependencies - using CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fontsampler@latest/dist/fontsampler.min.js"></script>
+  <style>
+    /* Enhanced responsive styling */
+    :root { 
+      --gap: 1rem; 
+      --primary-color: #2563eb;
+      --border-color: #e5e7eb;
+      --text-color: #374151;
+      --bg-light: #f9fafb;
+    }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      margin: 0; 
+      padding: var(--gap); 
+      background: #ffffff;
+      color: var(--text-color);
+    }
+    
+    .fsx-section { 
+      max-width: 1200px; 
+      margin: 0 auto var(--gap); 
+      padding: 2rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      background: var(--bg-light);
+    }
+    
+    .fsx-title { 
+      margin: 0 0 1rem; 
+      font-size: 2rem; 
+      color: var(--primary-color); 
+      font-weight: 600;
+    }
+    
+    .fsx-subtitle {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+    
+    /* Named instances row */
+    .fsx-instances { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 0.5rem; 
+      margin: 1rem 0;
+    }
+    
+    .fsx-badge { 
+      user-select: text; 
+      font-size: 0.8rem; 
+      padding: 0.4rem 0.8rem; 
+      border-radius: 1rem; 
+      border: 1px solid var(--primary-color); 
+      background: white; 
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+    
+    /* Style testers */
+    .fsx-style-item { 
+      margin: 1rem 0; 
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      background: white;
+    }
+    
+    .fsx-style-name { 
+      font-size: 1rem; 
+      color: var(--primary-color); 
+      margin: 0 0 0.5rem; 
+      font-weight: 600;
+    }
+    
+    /* Font tester areas */
+    .font-tester {
+      width: 100%;
+      min-height: 60px;
+      padding: 1rem;
+      border: 2px solid var(--border-color);
+      border-radius: 0.5rem;
+      font-size: 24px;
+      background: white;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .font-tester:focus {
+      border-color: var(--primary-color);
+    }
+    
+    .readonly {
+      background: var(--bg-light);
+      color: var(--text-color);
+    }
+    
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .control-group label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-color);
+      min-width: 60px;
+    }
+    
+    .control-group input[type="range"] {
+      width: 150px;
+    }
+    
+    .control-group input[type="number"] {
+      width: 80px;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.25rem;
+    }
+    
+    .feature-controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 1rem 0;
+    }
+    
+    .feature-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .error-message {
+      padding: 1rem;
+      border: 1px solid #fca5a5;
+      background: #fef2f2;
+      color: #dc2626;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <section class="fsx-section">
+    <h2 class="fsx-title">Archaism Font Demo</h2>
+    <p class="fsx-subtitle">Демонстрация вариативного шрифта Archaism с управлением осями</p>
+    
+    <!-- Name display -->
+    <div class="fsx-style-item">
+      <div class="fsx-style-name">Font Name Display</div>
+      <div id="name_display" class="font-tester readonly">Archaism</div>
+    </div>
+    
+    <!-- Main sampler -->
+    <div class="fsx-style-item">
+      <div class="fsx-style-name">Interactive Tester</div>
+      <div class="font-tester" id="main_tester" contenteditable="true">Type your text here...</div>
+      
+      <div class="controls">
+        <div class="control-group">
+          <label for="size_control">Size:</label>
+          <input type="range" id="size_control" min="12" max="120" value="24">
+          <input type="number" id="size_number" min="12" max="120" value="24">px
+        </div>
+        
+        <div class="control-group">
+          <label for="width_control">Width:</label>
+          <input type="range" id="width_control" min="0" max="100" value="50">
+          <span id="width_value">50</span>
+        </div>
+        
+        <div class="control-group">
+          <label for="contrast_control">Contrast:</label>
+          <input type="range" id="contrast_control" min="0" max="2" value="1">
+          <span id="contrast_value">1</span>
+        </div>
+      </div>
+      
+      <div class="feature-controls">
+        <div class="feature-toggle">
+          <input type="checkbox" id="liga" checked>
+          <label for="liga">Ligatures</label>
+        </div>
+        <div class="feature-toggle">
+          <input type="checkbox" id="dlig">
+          <label for="dlig">Discretionary Ligatures</label>
+        </div>
+        <div class="feature-toggle">
+          <input type="checkbox" id="ss01">
+          <label for="ss01">Stylistic Set 01</label>
+        </div>
+        <div class="feature-toggle">
+          <input type="checkbox" id="onum">
+          <label for="onum">Old Style Numbers</label>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Named instances -->
+    <div class="fsx-style-item">
+      <div class="fsx-style-name">Named Instances</div>
+      
+      <div class="fsx-style-item">
+        <div class="fsx-style-name">Wd100Ct0 (Width: 100, Contrast: 0)</div>
+        <div class="font-tester" id="instance1" contenteditable="true">Wide & Low Contrast</div>
+        <div class="controls">
+          <div class="control-group">
+            <label>Size:</label>
+            <input type="range" class="instance-size" min="12" max="120" value="24" data-target="instance1">
+            <span class="size-display">24px</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="fsx-style-item">
+        <div class="fsx-style-name">Wd50Ct2 (Width: 50, Contrast: 2)</div>
+        <div class="font-tester" id="instance2" contenteditable="true">Medium & High Contrast</div>
+        <div class="controls">
+          <div class="control-group">
+            <label>Size:</label>
+            <input type="range" class="instance-size" min="12" max="120" value="24" data-target="instance2">
+            <span class="size-display">24px</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="fsx-style-item">
+        <div class="fsx-style-name">Wd0Ct1 (Width: 0, Contrast: 1)</div>
+        <div class="font-tester" id="instance3" contenteditable="true">Narrow & Medium Contrast</div>
+        <div class="controls">
+          <div class="control-group">
+            <label>Size:</label>
+            <input type="range" class="instance-size" min="12" max="120" value="24" data-target="instance3">
+            <span class="size-display">24px</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="fsx-instances">
+        <span class="fsx-badge">Wd100Ct0: wdth 100 · cntr 0</span>
+        <span class="fsx-badge">Wd50Ct2: wdth 50 · cntr 2</span>
+        <span class="fsx-badge">Wd0Ct1: wdth 0 · cntr 1</span>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Font loading and management
+    const fontUrl = 'https://nikita-kanarev.github.io/Archaism.woff2';
+    
+    // Load the font
+    async function loadFont() {
+      try {
+        const font = new FontFace('Archaism', `url(${fontUrl})`);
+        await font.load();
+        document.fonts.add(font);
+        console.log('Font loaded successfully');
+        initializeFontTesters();
+      } catch (error) {
+        console.error('Font loading failed:', error);
+        showError('Failed to load font. Please check your connection.');
+      }
+    }
+    
+    function showError(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = message;
+      document.querySelector('.fsx-section').prepend(errorDiv);
+    }
+    
+    function updateFontVariation(element, width, contrast, features = {}) {
+      const fontFeatures = Object.entries(features)
+        .filter(([key, value]) => value)
+        .map(([key]) => `"${key}"`)
+        .join(', ');
+      
+      element.style.fontFamily = 'Archaism, sans-serif';
+      element.style.fontVariationSettings = `"wdth" ${width}, "cntr" ${contrast}`;
+      
+      if (fontFeatures) {
+        element.style.fontFeatureSettings = fontFeatures;
+      } else {
+        element.style.fontFeatureSettings = 'normal';
+      }
+    }
+    
+    function initializeFontTesters() {
+      // Set up name display
+      const nameDisplay = document.getElementById('name_display');
+      nameDisplay.style.fontSize = '80px';
+      updateFontVariation(nameDisplay, 50, 1);
+      
+      // Set up main tester
+      const mainTester = document.getElementById('main_tester');
+      const sizeControl = document.getElementById('size_control');
+      const sizeNumber = document.getElementById('size_number');
+      const widthControl = document.getElementById('width_control');
+      const widthValue = document.getElementById('width_value');
+      const contrastControl = document.getElementById('contrast_control');
+      const contrastValue = document.getElementById('contrast_value');
+      
+      // Feature checkboxes
+      const ligaCheck = document.getElementById('liga');
+      const dligCheck = document.getElementById('dlig');
+      const ss01Check = document.getElementById('ss01');
+      const onumCheck = document.getElementById('onum');
+      
+      function updateMainTester() {
+        const size = parseInt(sizeControl.value);
+        const width = parseInt(widthControl.value);
+        const contrast = parseInt(contrastControl.value);
+        
+        const features = {
+          liga: ligaCheck.checked,
+          dlig: dligCheck.checked,
+          ss01: ss01Check.checked,
+          onum: onumCheck.checked
+        };
+        
+        mainTester.style.fontSize = size + 'px';
+        updateFontVariation(mainTester, width, contrast, features);
+        
+        // Update displays
+        sizeNumber.value = size;
+        widthValue.textContent = width;
+        contrastValue.textContent = contrast;
+      }
+      
+      // Event listeners for main tester
+      sizeControl.addEventListener('input', updateMainTester);
+      sizeNumber.addEventListener('input', (e) => {
+        sizeControl.value = e.target.value;
+        updateMainTester();
+      });
+      widthControl.addEventListener('input', updateMainTester);
+      contrastControl.addEventListener('input', updateMainTester);
+      
+      [ligaCheck, dligCheck, ss01Check, onumCheck].forEach(checkbox => {
+        checkbox.addEventListener('change', updateMainTester);
+      });
+      
+      // Initialize main tester
+      updateMainTester();
+      
+      // Set up named instances
+      const instance1 = document.getElementById('instance1');
+      const instance2 = document.getElementById('instance2');
+      const instance3 = document.getElementById('instance3');
+      
+      // Instance 1: Width 100, Contrast 0
+      updateFontVariation(instance1, 100, 0);
+      
+      // Instance 2: Width 50, Contrast 2
+      updateFontVariation(instance2, 50, 2);
+      
+      // Instance 3: Width 0, Contrast 1
+      updateFontVariation(instance3, 0, 1);
+      
+      // Set up instance size controls
+      document.querySelectorAll('.instance-size').forEach(control => {
+        const target = document.getElementById(control.dataset.target);
+        const sizeDisplay = control.nextElementSibling;
+        
+        control.addEventListener('input', () => {
+          const size = control.value;
+          target.style.fontSize = size + 'px';
+          sizeDisplay.textContent = size + 'px';
+        });
+        
+        // Initialize
+        target.style.fontSize = control.value + 'px';
+      });
+    }
+    
+    // Start the application
+    document.addEventListener('DOMContentLoaded', loadFont);
+  </script>
+
+</body>
+</html>

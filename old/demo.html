@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fontsampler Auto Init — Demo</title>
+  <!-- 1) Include fontsampler core + optional skin (UI/controls styling) -->
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
+
+  <style>
+    /* Minimal responsive framing */
+    :root { --gap: 1rem; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: var(--gap); }
+    .fsx-section { max-width: 1200px; margin: 0 auto var(--gap); }
+    .fsx-title { margin: 0 0 .5rem; font-size: 1rem; color: #666; }
+    /* Named instances row under the main sampler */
+    .fsx-instances { display: flex; flex-wrap: wrap; gap: .5rem .75rem; margin-top: .5rem; }
+    .fsx-badge { user-select: text; font-size: .85rem; padding: .2rem .5rem; border-radius: .5rem; border: 1px solid #ddd; background: #fafafa; }
+    /* Each instance tester in styles block */
+    .fsx-style-item { margin: .75rem 0; }
+    .fsx-style-name { font-size: .9rem; color: #444; margin: .25rem 0; }
+    /* Make inputs stretch nicely */
+    .fontsamplerjs { width: 100%; box-sizing: border-box; }
+    .fontsamplerjs .fsjs-wrapper { flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+  <!-- =========================
+       Demo HTML Markup
+       ========================= -->
+  <!--
+    Minimal data attributes strategy (one per font family):
+    - data-font: a path to *one* font file; meta JSON will be inferred next to it by changing the extension to .json
+      (e.g. fonts/roboto/RobotoFlex.woff2  - > fonts/roboto/RobotoFlex.json)
+    - OR provide data-meta explicitly to override (e.g. fonts/roboto/meta.json)
+
+    Required div id patterns (XXX is a lowercase key for the font):
+      #name_XXX            — readonly name tester
+      #main_sampler_XXX    — single-line variable tester (axes + OT features) + Named Instances badges
+      #sampler_XXX         — multiline variable tester (axes + OT features + size control)
+      #styles_sampler_XXX  — one single-line tester per Named Instance
+
+    You can put any subset of these blocks on the page, and repeat for multiple fonts.
+  -->
+
+  <section class="fsx-section">
+    <h2 class="fsx-title">Archaism</h2>
+    <div id="name_Archaism"          data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+    <div id="main_sampler_Archaism"  data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+    <div id="sampler_Archaism"       data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+    <div id="styles_sampler_Archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+  </section>
+
+
+
+  <!-- =========================
+       Auto Initializer Script
+       ========================= -->
+  <script>
+  (function () {
+    "use strict";
+
+    /**
+     * Expected JSON schema (example):
+     * {
+     *   "name": "Roboto Flex",
+     *   "files": ["./fonts/roboto/RobotoFlex.woff2", "./fonts/roboto/RobotoFlex.woff"],
+     *   "axes": [
+     *     { "tag": "wght", "min": 100, "max": 1000, "default": 400, "step": 1, "label": "Weight" },
+     *     { "tag": "wdth", "min": 25,  "max": 151,  "default": 100, "step": 1, "label": "Width" },
+     *     { "tag": "opsz", "min": 8,   "max": 144,  "default": 14,  "step": 1, "label": "Optical" }
+     *   ],
+     *   "features": ["liga", "dlig", "ss01", "onum"],
+     *   "instances": [
+     *     { "name": "Thin",   "instance": { "wght": 100 } },
+     *     { "name": "Regular","instance": { "wght": 400 } },
+     *     { "name": "Bold",   "instance": { "wght": 700 } }
+     *   ]
+     * }
+     */
+
+    const Q = {
+      NAME: /^name_(.+)$/,
+      MAIN: /^main_sampler_(.+)$/,
+      MULTI: /^sampler_(.+)$/,
+      STYLES: /^styles_sampler_(.+)$/
+    };
+
+    /** Resolve JSON metadata URL from a node. */
+    function resolveMetaUrl(node) {
+      const explicit = node.getAttribute("data-meta");
+      if (explicit) return explicit;
+      const fontUrl = node.getAttribute("data-font");
+      if (!fontUrl) return null;
+      // infer ./path/file.ext -> ./path/file.json
+      try {
+        const url = new URL(fontUrl, document.baseURI);
+        const pathname = url.pathname;
+        const jsonPath = pathname.replace(/\.[^.]+$/, ".json");
+        return url.origin + jsonPath + url.search + url.hash;
+      } catch (e) {
+        // Relative paths without base
+        return fontUrl.replace(/\.[^.]+$/, ".json");
+      }
+    }
+
+    /** Fetch JSON with graceful errors */
+    async function loadMeta(metaUrl) {
+      const fail = (msg) => ({ error: true, message: msg });
+      if (!metaUrl) return fail("No meta URL provided (set data-meta or data-font)");
+      try {
+        const res = await fetch(metaUrl, { credentials: "same-origin" });
+        if (!res.ok) return fail(`Failed to load meta: ${res.status} ${res.statusText}`);
+        const json = await res.json();
+        if (!json || !Array.isArray(json.files)) return fail("Meta JSON missing required 'files' array");
+        return json;
+      } catch (err) {
+        return fail("Meta fetch error: " + (err && err.message ? err.message : String(err)));
+      }
+    }
+
+    /** Build Fontsampler fonts array from meta */
+    function buildFonts(meta, instanceOverride) {
+      // Each font entry can carry an explicit named instance (variable axes location)
+      const base = { name: meta.name || "", files: meta.files };
+      if (instanceOverride) base.instance = instanceOverride;
+      return [ base ];
+    }
+
+    /** Build options with variable axes + opentype features */
+    function buildOptions(meta, {
+      multiline = true,
+      initialText = "",
+      sizePx = 18,
+      readonly = false,
+      showSize = false
+    } = {}) {
+      const order = [];
+      const config = {};
+
+      // tester (content area)
+      order.push("tester");
+      config.tester = { editable: !readonly, label: false };
+
+      // size/line/track controls (optional)
+      if (showSize) {
+        order.unshift(["fontsize"]);
+        config.fontsize = { unit: "px", init: sizePx, min: 8, max: 256, step: 1, label: "Size" };
+      }
+
+      // OpenType features checkboxes, if any
+      if (Array.isArray(meta.features) && meta.features.length) {
+        order.push(["opentype"]);
+        config.opentype = { choices: meta.features, init: [], label: "OpenType" };
+      }
+
+      // Variable font axes: add every axis tag as its own slider
+      if (Array.isArray(meta.axes) && meta.axes.length) {
+        const axisRow = [];
+        for (const axis of meta.axes) {
+          const tag = axis.tag;
+          axisRow.push(tag);
+          config[tag] = {
+            init: typeof axis.default === "number" ? axis.default : axis.min,
+            min: axis.min,
+            max: axis.max,
+            step: axis.step || 1,
+            label: axis.label || tag
+          };
+        }
+        order.push(axisRow);
+      }
+
+      return {
+        initialText,
+        multiline,
+        lazyload: false, // keep first paint quick; adjust to true if you add many fonts
+        order,
+        config,
+        classes: { rootClass: "fontsamplerjs" }
+      };
+    }
+
+    /** Attach a subtle error block into a container */
+    function showError(node, message) {
+      const el = document.createElement("div");
+      el.setAttribute("role", "status");
+      el.style.cssText = "padding:.75rem;border:1px solid #e0b4b4;background:#fff6f6;color:#912d2b;border-radius:.5rem";
+      el.textContent = message;
+      node.appendChild(el);
+    }
+
+    /** Render named instances badges below a given container */
+    function renderNamedInstancesRow(container, instances) {
+      if (!instances || !instances.length) return;
+      const row = document.createElement("div");
+      row.className = "fsx-instances";
+      for (const inst of instances) {
+        const badge = document.createElement("span");
+        badge.className = "fsx-badge";
+        const coords = inst.instance ? Object.entries(inst.instance).map(([k,v]) => `${k} ${v}`).join(" · ") : "";
+        badge.textContent = coords ? `${inst.name}: ${coords}` : inst.name;
+        row.appendChild(badge);
+      }
+      container.appendChild(row);
+    }
+
+    /** Initialize a SINGLE node by type */
+    async function initNode(node, type) {
+      const metaUrl = resolveMetaUrl(node);
+      const meta = await loadMeta(metaUrl);
+      if (meta.error) { showError(node, meta.message); return; }
+
+      // Dispatch by required sampler type
+      if (type === "name") {
+        const options = buildOptions(meta, { multiline: false, initialText: meta.name || "", sizePx: 80, readonly: true, showSize: false });
+        const fs = Fontsampler(node, buildFonts(meta), options);
+        FontsamplerSkin(fs); fs.init();
+        return;
+      }
+
+      if (type === "main") {
+        const options = buildOptions(meta, { multiline: false, initialText: "", sizePx: 80, readonly: false, showSize: false });
+        // Force 80px default text size for main tester
+        options.config.fontsize = { unit: "px", init: 80, min: 8, max: 256, step: 1, label: "Size" };
+        // We keep the size control hidden, but you can enable by toggling showSize: true above
+        const fs = Fontsampler(node, buildFonts(meta), options);
+        FontsamplerSkin(fs); fs.init();
+        // Named Instances row (read-only, non-interactive)
+        renderNamedInstancesRow(node, meta.instances);
+        return;
+      }
+
+      if (type === "multi") {
+        const options = buildOptions(meta, { multiline: true, initialText: "This is a multi-line variable tester…", sizePx: 24, readonly: false, showSize: true });
+        const fs = Fontsampler(node, buildFonts(meta), options);
+        FontsamplerSkin(fs); fs.init();
+        return;
+      }
+
+      if (type === "styles") {
+        // For each named instance create an individual single-line tester
+        const instances = Array.isArray(meta.instances) ? meta.instances : [];
+        if (!instances.length) {
+          showError(node, "No Named Instances defined in meta JSON.");
+          return;
+        }
+        for (const inst of instances) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "fsx-style-item";
+          const label = document.createElement("div");
+          label.className = "fsx-style-name";
+          label.textContent = inst.name;
+          const mount = document.createElement("div");
+          wrapper.appendChild(label);
+          wrapper.appendChild(mount);
+          node.appendChild(wrapper);
+
+          const options = buildOptions(meta, { multiline: false, initialText: "Type to test…", sizePx: 48, readonly: false, showSize: true });
+          const fs = Fontsampler(mount, buildFonts(meta, inst.instance), options);
+          FontsamplerSkin(fs); fs.init();
+        }
+        return;
+      }
+    }
+
+    /** Scan DOM and initialize everything */
+    async function initAll() {
+      const nodes = Array.from(document.querySelectorAll("div[id]"));
+      const jobs = [];
+      for (const node of nodes) {
+        const id = node.id;
+        if (Q.NAME.test(id)) jobs.push(initNode(node, "name"));
+        else if (Q.MAIN.test(id)) jobs.push(initNode(node, "main"));
+        else if (Q.MULTI.test(id)) jobs.push(initNode(node, "multi"));
+        else if (Q.STYLES.test(id)) jobs.push(initNode(node, "styles"));
+      }
+      // Wait for all inits to complete to surface all errors
+      await Promise.allSettled(jobs);
+    }
+
+    // Fire after DOM is ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initAll);
+    } else {
+      initAll();
+    }
+  })();
+  </script>
+
+  <!-- =========================
+       Example META JSON (drop next to font file as .json)
+       Save as: ./fonts/roboto/RobotoFlex.json
+       ========================= -->
+  <!--
+  {
+    "name": "Roboto Flex",
+    "files": [
+      "./fonts/roboto/RobotoFlex.woff2",
+      "./fonts/roboto/RobotoFlex.woff"
+    ],
+    "axes": [
+      { "tag": "wght", "min": 100, "max": 1000, "default": 400, "step": 1,  "label": "Weight" },
+      { "tag": "wdth", "min": 25,  "max": 151,  "default": 100, "step": 1,  "label": "Width" },
+      { "tag": "opsz", "min": 8,   "max": 144,  "default": 14,  "step": 1,  "label": "Optical" }
+    ],
+    "features": ["liga", "dlig", "ss01", "onum"],
+    "instances": [
+      { "name": "Thin",    "instance": { "wght": 100 } },
+      { "name": "Regular", "instance": { "wght": 400 } },
+      { "name": "Bold",    "instance": { "wght": 700 } }
+    ]
+  }
+  -->
+
+</body>
+</html>
