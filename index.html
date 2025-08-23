@@ -49,7 +49,7 @@
     }
     
     .fsx-instance-sample {
-      font-size: 88px;  /* реальный размер текста мини-проб */
+      font-size: 88px;  /* крупные мини-пробы */
       line-height: 1;
       margin-left: 10px;
       min-width: 200px;
@@ -80,12 +80,11 @@
       font-size: 12px;
     }
 
-    /* скрыть контролы у name_* */
-    [id^="name_"] .fsjs-control-group {
-      display: none !important;
-    }
+    /* name_* — без контролов, фиксируем размер 220px */
+    [id^="name_"] .fsjs-control-group { display: none !important; }
+    [id^="name_"] .fsjs-tester { font-size: 220px; line-height: 1; }
 
-    /* убрать контролы у мини-проб инстансов */
+    /* убрать контролы у мини-проб инстансов в блоке main_sampler_* */
     .fsx-instances .fsjs-control-fontsize,
     .fsx-instances .fsjs-control-opentype,
     .fsx-instances .fsjs-control-axis {
@@ -231,14 +230,18 @@
      * @param {Object} config - Configuration options
      * @returns {Object} Fontsampler options
      */
-    function buildOptions(meta, {
-      multiline = true,
-      initialText = "",
-      sizePx = 38,
-      readonly = false,
-      showSize = false
-    } = {}) {
-      
+    function buildOptions(
+      meta,
+      {
+        multiline = true,
+        initialText = "",
+        sizePx = 38,
+        readonly = false,
+        showSize = false,
+        includeFeatures = true,
+        includeAxes = true
+      } = {}
+    ) {
       const order = [];
       const config = {};
 
@@ -262,8 +265,8 @@
         };
       }
 
-      // OpenType features
-      if (Array.isArray(meta.features) && meta.features.length) {
+      // OpenType features (optional)
+      if (includeFeatures && Array.isArray(meta.features) && meta.features.length) {
         order.push(["opentype"]);
         config.opentype = { 
           choices: meta.features, 
@@ -272,8 +275,8 @@
         };
       }
 
-      // Variable font axes
-      if (Array.isArray(meta.axes) && meta.axes.length) {
+      // Variable font axes (optional)
+      if (includeAxes && Array.isArray(meta.axes) && meta.axes.length) {
         const axisRow = [];
         
         for (const axis of meta.axes) {
@@ -360,11 +363,9 @@
         try {
           const fonts = buildFonts(meta, inst.instance);
           const fs = new Fontsampler(sample, fonts, instanceOptions);
-          // ВАЖНО: применяем скин, чтобы DOM/классы были согласованы с общей темой
           FontsamplerSkin(fs);
           fs.init();
 
-          // страховка: держим корневой контейнер инстанса инлайновым в одной строке
           const root = sample.querySelector(".fsjs-root");
           if (root) root.style.display = "inline-block";
         } catch (err) {
@@ -403,14 +404,12 @@
       try {
         switch (type) {
           case "name": {
-            // Readonly name display
+            // Readonly name display (фикс. размер 220px через CSS)
             const nameOptions = {
               initialText: meta.name || "Font Name",
               multiline: false,
               lazyload: false,
-              config: {
-                tester: { editable: false, label: false }
-              },
+              config: { tester: { editable: false, label: false } },
               order: ["tester"],
               classes: { rootClass: "fsjs-skin" }
             };
@@ -428,7 +427,9 @@
               initialText: "Type here", 
               sizePx: 180, 
               readonly: false,
-              showSize: false 
+              showSize: false,
+              includeFeatures: true,
+              includeAxes: true
             });
             
             const mainFs = new Fontsampler(node, buildFonts(meta), mainOptions);
@@ -449,7 +450,9 @@
               initialText: "Multi-line text here...\nType more text to test the font.", 
               sizePx: 24, 
               readonly: false,
-              showSize: true 
+              showSize: true,
+              includeFeatures: true,
+              includeAxes: true
             });
             
             const multiFs = new Fontsampler(node, buildFonts(meta), multiOptions);
@@ -459,7 +462,7 @@
           }
 
           case "styles": {
-            // Individual testers for each named instance
+            // Individual testers for each named instance — ТОЛЬКО размер (без OpenType и осей)
             const instances = Array.isArray(meta.instances) ? meta.instances : [];
             
             if (!instances.length) {
@@ -486,7 +489,9 @@
                 initialText: inst.name, 
                 sizePx: 32, 
                 readonly: false,
-                showSize: true 
+                showSize: true,
+                includeFeatures: false, // отключаем OpenType
+                includeAxes: false      // отключаем оси
               });
               
               const styleFs = new Fontsampler(mount, buildFonts(meta, inst.instance), styleOptions);
