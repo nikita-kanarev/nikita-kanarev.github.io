@@ -135,20 +135,6 @@
   (function () {
     "use strict";
 
-    /**
-     * Universal Fontsampler Auto-Initializer
-     * 
-     * Automatically scans page for div elements matching these patterns:
-     * - name_XXX: readonly name display
-     * - main_sampler_XXX: single-line tester with axes/features + named instances
-     * - sampler_XXX: multi-line tester with axes/features + size control
-     * - styles_sampler_XXX: individual testers for each named instance
-     * 
-     * Supports multiple fonts on same page using different XXX identifiers.
-     * Uses data-font attribute to specify font file path.
-     * JSON metadata is inferred by changing font extension to .json
-     */
-
     // ID patterns for different tester types
     const PATTERNS = {
       NAME: /^name_(.+)$/,
@@ -157,11 +143,6 @@
       STYLES: /^styles_sampler_(.+)$/
     };
 
-    /**
-     * Resolve JSON metadata URL from font URL
-     * @param {string} fontUrl - Path to font file
-     * @returns {string} Path to JSON metadata file
-     */
     function resolveMetaUrl(fontUrl) {
       if (!fontUrl) return null;
       try {
@@ -170,66 +151,36 @@
         const jsonPath = pathname.replace(/\.[^.]+$/, ".json");
         return url.origin + jsonPath + url.search + url.hash;
       } catch (e) {
-        // Handle relative paths
         return fontUrl.replace(/\.[^.]+$/, ".json");
       }
     }
 
-    /**
-     * Fetch and parse JSON metadata with error handling
-     * @param {string} metaUrl - URL to JSON metadata
-     * @returns {Object} Parsed metadata or error object
-     */
     async function loadMeta(metaUrl) {
       const fail = (msg) => ({ error: true, message: msg });
-      
       if (!metaUrl) return fail("No metadata URL provided");
-      
       try {
         const res = await fetch(metaUrl, { credentials: "same-origin" });
         if (!res.ok) return fail(`Failed to load metadata: ${res.status} ${res.statusText}`);
-        
         const json = await res.json();
         if (!json || (!json.files && !Array.isArray(json.files))) {
           return fail("Invalid metadata: missing 'files' property");
         }
-        
-        // Normalize files to array format
-        if (typeof json.files === 'string') {
-          json.files = [json.files];
-        }
-        
+        if (typeof json.files === 'string') json.files = [json.files];
         return json;
       } catch (err) {
         return fail(`Metadata fetch error: ${err.message || err}`);
       }
     }
 
-    /**
-     * Build fonts array for fontsampler
-     * @param {Object} meta - Font metadata
-     * @param {Object} instanceOverride - Specific named instance settings
-     * @returns {Array} Fontsampler fonts configuration
-     */
     function buildFonts(meta, instanceOverride = null) {
       const base = { 
         name: meta.name || "Unknown Font", 
         files: meta.files 
       };
-      
-      if (instanceOverride) {
-        base.instance = instanceOverride;
-      }
-      
+      if (instanceOverride) base.instance = instanceOverride;
       return [base];
     }
 
-    /**
-     * Build fontsampler options configuration
-     * @param {Object} meta - Font metadata
-     * @param {Object} config - Configuration options
-     * @returns {Object} Fontsampler options
-     */
     function buildOptions(
       meta,
       {
@@ -247,21 +198,13 @@
 
       // Content area (tester)
       order.push("tester");
-      config.tester = { 
-        editable: !readonly, 
-        label: false 
-      };
+      config.tester = { editable: !readonly, label: false };
 
       // Size control (optional)
       if (showSize) {
         order.unshift(["fontsize"]);
         config.fontsize = { 
-          unit: "px", 
-          init: sizePx, 
-          min: 8, 
-          max: 256, 
-          step: 1, 
-          label: "Size" 
+          unit: "px", init: sizePx, min: 8, max: 256, step: 1, label: "Size" 
         };
       }
 
@@ -278,11 +221,9 @@
       // Variable font axes (optional)
       if (includeAxes && Array.isArray(meta.axes) && meta.axes.length) {
         const axisRow = [];
-        
         for (const axis of meta.axes) {
           const tag = axis.tag;
           axisRow.push(tag);
-          
           config[tag] = {
             init: typeof axis.default === "number" ? axis.default : axis.min,
             min: axis.min,
@@ -291,10 +232,7 @@
             label: axis.label || tag.toUpperCase()
           };
         }
-        
-        if (axisRow.length) {
-          order.push(axisRow);
-        }
+        if (axisRow.length) order.push(axisRow);
       }
 
       return {
@@ -303,17 +241,18 @@
         lazyload: false,
         order,
         config,
-        classes: { 
-          rootClass: "fsjs-skin" 
-        }
+        classes: { rootClass: "fsjs-skin" }
       };
     }
 
-    /**
-     * Display error message in container
-     * @param {HTMLElement} node - Container element
-     * @param {string} message - Error message
-     */
+    // --- helper: из объекта инстанса -> строка CSS font-variation-settings
+    function instanceToVarSettings(instanceObj) {
+      if (!instanceObj) return "";
+      return Object.entries(instanceObj)
+        .map(([tag, value]) => `'${tag}' ${value}`)
+        .join(", ");
+    }
+
     function showError(node, message) {
       const el = document.createElement("div");
       el.className = "fsx-error";
@@ -322,12 +261,6 @@
       node.appendChild(el);
     }
 
-    /**
-     * Create named instances display for main sampler
-     * @param {HTMLElement} container - Parent container
-     * @param {Array} instances - Named instances from metadata
-     * @param {Object} meta - Font metadata
-     */
     function createNamedInstancesDisplay(container, instances, meta) {
       if (!instances || !instances.length) return;
       
@@ -350,7 +283,6 @@
         const sample = document.createElement("div");
         sample.className = "fsx-instance-sample";
 
-        // Мини-проба: только тестер, без контролов
         const instanceOptions = {
           initialText: inst.name,
           multiline: false,
@@ -365,6 +297,13 @@
           const fs = new Fontsampler(sample, fonts, instanceOptions);
           FontsamplerSkin(fs);
           fs.init();
+
+          // ЯВНО применяем вариативные оси и "выключаем" вес как CSS
+          const testerEl = sample.querySelector(".fsjs-tester");
+          if (testerEl) {
+            testerEl.style.fontVariationSettings = instanceToVarSettings(inst.instance);
+            testerEl.style.fontWeight = "normal";   // не путать с 'wght'
+          }
 
           const root = sample.querySelector(".fsjs-root");
           if (root) root.style.display = "inline-block";
@@ -381,25 +320,13 @@
       container.appendChild(instancesContainer);
     }
 
-    /**
-     * Initialize a single node based on its type
-     * @param {HTMLElement} node - DOM element to initialize
-     * @param {string} type - Type of tester (name|main|multi|styles)
-     */
     async function initNode(node, type) {
       const fontUrl = node.getAttribute("data-font");
-      if (!fontUrl) {
-        showError(node, "Missing data-font attribute");
-        return;
-      }
+      if (!fontUrl) { showError(node, "Missing data-font attribute"); return; }
       
       const metaUrl = node.getAttribute("data-meta") || resolveMetaUrl(fontUrl);
       const meta = await loadMeta(metaUrl);
-      
-      if (meta.error) {
-        showError(node, meta.message);
-        return;
-      }
+      if (meta.error) { showError(node, meta.message); return; }
 
       try {
         switch (type) {
@@ -413,15 +340,16 @@
               order: ["tester"],
               classes: { rootClass: "fsjs-skin" }
             };
-            
             const nameFs = new Fontsampler(node, buildFonts(meta), nameOptions);
             FontsamplerSkin(nameFs);
             nameFs.init();
+            // на всякий случай — weight normal
+            const tester = node.querySelector(".fsjs-tester");
+            if (tester) tester.style.fontWeight = "normal";
             break;
           }
 
           case "main": {
-            // Main single-line sampler with named instances
             const mainOptions = buildOptions(meta, { 
               multiline: false, 
               initialText: "Type here", 
@@ -431,12 +359,9 @@
               includeFeatures: true,
               includeAxes: true
             });
-            
             const mainFs = new Fontsampler(node, buildFonts(meta), mainOptions);
             FontsamplerSkin(mainFs);
             mainFs.init();
-            
-            // Add named instances display
             setTimeout(() => {
               createNamedInstancesDisplay(node, meta.instances, meta);
             }, 100);
@@ -444,7 +369,6 @@
           }
 
           case "multi": {
-            // Multi-line tester with size control
             const multiOptions = buildOptions(meta, { 
               multiline: true, 
               initialText: "Multi-line text here...\nType more text to test the font.", 
@@ -454,7 +378,6 @@
               includeFeatures: true,
               includeAxes: true
             });
-            
             const multiFs = new Fontsampler(node, buildFonts(meta), multiOptions);
             FontsamplerSkin(multiFs);
             multiFs.init();
@@ -462,13 +385,9 @@
           }
 
           case "styles": {
-            // Individual testers for each named instance — ТОЛЬКО размер (без OpenType и осей)
+            // Только размер; без OpenType и осей в UI, но оси инстанса применяем явно
             const instances = Array.isArray(meta.instances) ? meta.instances : [];
-            
-            if (!instances.length) {
-              showError(node, "No named instances defined in metadata");
-              return;
-            }
+            if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
             
             for (const inst of instances) {
               const wrapper = document.createElement("div");
@@ -490,13 +409,20 @@
                 sizePx: 32, 
                 readonly: false,
                 showSize: true,
-                includeFeatures: false, // отключаем OpenType
-                includeAxes: false      // отключаем оси
+                includeFeatures: false,
+                includeAxes: false
               });
               
               const styleFs = new Fontsampler(mount, buildFonts(meta, inst.instance), styleOptions);
               FontsamplerSkin(styleFs);
               styleFs.init();
+
+              // ЯВНО применяем вариативные оси и "выключаем" вес как CSS
+              const testerEl = mount.querySelector(".fsjs-tester");
+              if (testerEl) {
+                testerEl.style.fontVariationSettings = instanceToVarSettings(inst.instance);
+                testerEl.style.fontWeight = "normal";
+              }
             }
             break;
           }
@@ -506,16 +432,12 @@
       }
     }
 
-    /**
-     * Scan DOM and initialize all matching elements
-     */
     async function initAll() {
       const nodes = Array.from(document.querySelectorAll("div[id]"));
       const jobs = [];
 
       for (const node of nodes) {
         const id = node.id;
-        
         if (PATTERNS.NAME.test(id)) {
           jobs.push(initNode(node, "name"));
         } else if (PATTERNS.MAIN.test(id)) {
@@ -526,12 +448,9 @@
           jobs.push(initNode(node, "styles"));
         }
       }
-
-      // Wait for all initializations to complete
       await Promise.allSettled(jobs);
     }
 
-    // Start initialization when DOM is ready
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", initAll);
     } else {
@@ -541,9 +460,7 @@
   </script>
 
   <!-- 
-  Example JSON metadata structure:
-  Save as: Archaism.json (same name as font file but with .json extension)
-  
+  Пример JSON:
   {
     "name": "Archaism",
     "files": "https://nikita-kanarev.github.io/Archaism.woff2",
@@ -558,10 +475,6 @@
       { "name": "Wd0Ct1", "instance": { "wdth": 0, "cntr": 1 } }
     ]
   }
-
-  Note: The script supports:
-  - "files": "single-file.woff2" (string)
-  - "files": ["file1.woff2", "file2.woff2"] (array)
   -->
 </body>
 </html>
