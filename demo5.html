@@ -351,13 +351,16 @@
         sample.textContent = "Type here";
         
         // Initialize with fontsampler for this specific instance
-        const instanceOptions = buildOptions(meta, {
+        const instanceOptions = {
+          initialText: inst.name,
           multiline: false,
-          initialText: "Type here",
-          sizePx: 48,
-          readonly: false,
-          showSize: false
-        });
+          lazyload: false,
+          config: {
+           tester: { editable: false, label: false, style: "font-size: 88px;" }
+          },
+          order: ["tester"],
+          classes: { rootClass: "fsjs-skin" }
+          };
         
         try {
           const fonts = buildFonts(meta, inst.instance);
