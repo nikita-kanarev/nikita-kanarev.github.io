@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fontsampler — patched (styles uses stock, name uses custom)</title>
+
+  <!-- Fontsampler core + skin -->
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
+
+  <style>
+    body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 24px; }
+    h2 { margin: 0 0 8px 0; font-size: 16px; }
+    .fsx-group { margin: 24px 0; padding: 16px; border: 1px solid #ddd; border-radius: 10px; }
+    .fsx-row { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    .fsx-col { flex: 1 1 360px; }
+
+    /* name_*: без контролов, крупный кегль */
+    [id^="name_"] .fsjs-control-group { display: none !important; }
+    [id^="name_"] .fsjs-tester { font-size: 220px; line-height: .9; }
+
+    /* мини-таблица инстансов */
+    .fsx-instances { margin-top: 16px; }
+    .fsx-instance-row { display:flex; align-items:center; gap:12px; margin: 8px 0; }
+    .fsx-instance-row .label { min-width: 140px; font-weight: 600; }
+    .fsx-instance-row .fsjs-root { display:inline-block; }
+  </style>
+</head>
+<body>
+  <h1>Fontsampler — patched</h1>
+
+  <!-- ШРИФТ 1: Archaism -->
+  <section class="fsx-group" id="archaism">
+    <h2>Archaism</h2>
+    <div class="fsx-row">
+      <div class="fsx-col">
+        <div id="name_archaism" data-font="Archaism.woff2"></div>
+      </div>
+      <div class="fsx-col">
+        <div id="main_sampler_archaism" data-font="Archaism.woff2"></div>
+      </div>
+    </div>
+    <div class="fsx-row">
+      <div class="fsx-col">
+        <div id="sampler_archaism" data-font="Archaism.woff2"></div>
+      </div>
+      <div class="fsx-col">
+        <div id="styles_sampler_archaism" data-font="Archaism.woff2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ШРИФТ 2: InterVariable (пример второй секции, можно удалить/заменить) -->
+  <section class="fsx-group" id="inter">
+    <h2>InterVariable</h2>
+    <div class="fsx-row">
+      <div class="fsx-col">
+        <div id="name_inter" data-font="InterVariable.woff2"></div>
+      </div>
+      <div class="fsx-col">
+        <div id="main_sampler_inter" data-font="InterVariable.woff2"></div>
+      </div>
+    </div>
+    <div class="fsx-row">
+      <div class="fsx-col">
+        <div id="sampler_inter" data-font="InterVariable.woff2"></div>
+      </div>
+      <div class="fsx-col">
+        <div id="styles_sampler_inter" data-font="InterVariable.woff2"></div>
+      </div>
+    </div>
+  </section>
+
+<script>
+(() => {
+  "use strict";
+
+  const PATTERNS = {
+    NAME:  /^name_(.+)$/,
+    MAIN:  /^main_sampler_(.+)$/,
+    MULTI: /^sampler_(.+)$/,
+    STYLES:/^styles_sampler_(.+)$/
+  };
+
+  const q = (sel, ctx=document) => ctx.querySelector(sel);
+  const qa = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+
+  function resolveMetaUrl(fontUrl) {
+    try {
+      const u = new URL(fontUrl, location.href);
+      u.pathname = u.pathname.replace(/\.[^.]+$/, ".json");
+      return u.toString();
+    } catch (e) {
+      return fontUrl.replace(/\.[^.]+$/, ".json");
+    }
+  }
+
+  async function loadMeta(metaUrl) {
+    try {
+      const res = await fetch(metaUrl, { credentials: "same-origin" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const meta = await res.json();
+      if (typeof meta.files === "string") meta.files = [meta.files];
+      if (!Array.isArray(meta.files) || !meta.files.length) {
+        throw new Error("No font files in metadata");
+      }
+      return meta;
+    } catch (err) {
+      return { error: true, message: String(err) };
+    }
+  }
+
+  function buildFonts(meta, instanceOverride=null) {
+    const family = {
+      name: meta.name || "Unknown Font",
+      files: meta.files
+    };
+    if (instanceOverride) family.instance = instanceOverride;
+    return [family];
+  }
+
+  function buildOptions(meta, opts={}) {
+    const showSize = !!opts.showSize;
+    const includeFeatures = !!opts.includeFeatures;
+    const includeAxes = !!opts.includeAxes;
+
+    const order = ["tester"];
+    const config = {
+      tester: { initialText: meta.previewText || "Type here", multiline: !!opts.multiline },
+    };
+
+    if (showSize) {
+      order.push("fontsize");
+      config.fontsize = { min: 8, max: 256, step: 1, initial: 72 };
+    }
+    if (includeFeatures && Array.isArray(meta.features) && meta.features.length) {
+      order.push("features");
+      config.features = { features: meta.features };
+    }
+    if (includeAxes && Array.isArray(meta.axes) && meta.axes.length) {
+      order.push("variations");
+      config.variations = {
+        axes: meta.axes.map(a => ({
+          tag: a.tag, min: a.min, max: a.max,
+          initial: (a.default ?? a.min), step: a.step ?? 1, label: a.label || a.tag
+        }))
+      };
+    }
+
+    return {
+      order,
+      config,
+      classes: { rootClass: "fsjs-skin" }
+    };
+  }
+
+  function instanceToVarSettings(instanceObj) {
+    return Object.entries(instanceObj)
+      .map(([tag, val]) => `'${tag}' ${val}`)
+      .join(", ");
+  }
+
+  function showError(node, message) {
+    node.innerHTML = '<div class="fsx-error">Error: ' + message + "</div>";
+  }
+
+  // Named instances list used by MAIN sampler (unchanged)
+  function createNamedInstancesDisplay(container, instances, meta) {
+    const wrap = document.createElement("div");
+    wrap.className = "fsx-instances";
+    const title = document.createElement("div");
+    title.textContent = "Named Instances";
+    title.style.fontWeight = "bold";
+    wrap.appendChild(title);
+
+    for (const inst of instances) {
+      const row = document.createElement("div");
+      row.className = "fsx-instance-row";
+
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = inst.name || "(unnamed)";
+      row.appendChild(label);
+
+      const test = document.createElement("div");
+      row.appendChild(test);
+
+      const fs = new Fontsampler(
+        test,
+        buildFonts(meta, inst.instance),
+        buildOptions(meta, { showSize: false, includeFeatures: false, includeAxes: false })
+      );
+      fs.init().then(() => {
+        const tester = test.querySelector(".fsjs-tester");
+        tester.style.fontVariationSettings = instanceToVarSettings(inst.instance);
+        tester.style.fontWeight = "normal";
+      }).catch(() => {});
+
+      wrap.appendChild(row);
+    }
+
+    container.appendChild(wrap);
+  }
+
+  async function initNode(node, type) {
+    const fontUrl = node.getAttribute("data-font");
+    if (!fontUrl) { showError(node, "Missing data-font"); return; }
+
+    const metaUrl = node.getAttribute("data-meta") || resolveMetaUrl(fontUrl);
+    const meta = await loadMeta(metaUrl);
+    if (meta.error) { showError(node, "Meta load failed: " + meta.message); return; }
+
+    try {
+      if (type === "name") {
+        // CUSTOM solution now lives here:
+        // Use the first instance (if present) to render the big Name sample, with explicit CSS var settings.
+        const baseInstance = Array.isArray(meta.instances) && meta.instances.length ? meta.instances[0].instance : null;
+
+        const fs = new Fontsampler(
+          node,
+          buildFonts(meta, baseInstance),
+          buildOptions(meta, { showSize: false, includeFeatures: false, includeAxes: false })
+        );
+        await fs.init();
+        const tester = node.querySelector(".fsjs-tester");
+        if (baseInstance) {
+          tester.style.fontVariationSettings = instanceToVarSettings(baseInstance);
+        }
+        tester.style.fontWeight = "normal";
+        tester.textContent = meta.name || tester.textContent;
+
+      } else if (type === "main") {
+        // Main one-line sampler with features + axes; size fixed by config (no size control shown)
+        const fs = new Fontsampler(
+          node,
+          buildFonts(meta, null),
+          buildOptions(meta, { showSize: false, includeFeatures: true, includeAxes: true, multiline: false })
+        );
+        await fs.init();
+
+        // Below the main sampler, show named instances miniature list (custom)
+        if (Array.isArray(meta.instances) && meta.instances.length) {
+          createNamedInstancesDisplay(node, meta.instances, meta);
+        }
+
+      } else if (type === "multi") {
+        // Multiline sampler with size slider + features + axes
+        const fs = new Fontsampler(
+          node,
+          buildFonts(meta, null),
+          buildOptions(meta, { showSize: true, includeFeatures: true, includeAxes: true, multiline: true })
+        );
+        await fs.init();
+
+      } else if (type === "styles") {
+        // RESTORED: Use STOCK Fontsampler per instance — no custom CSS overrides.
+        const instances = Array.isArray(meta.instances) ? meta.instances : [];
+        if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
+
+        const list = document.createElement("div");
+        list.className = "fsx-instances";
+        const title = document.createElement("div");
+        title.textContent = "Named Instances (stock)";
+        title.style.fontWeight = "bold";
+        list.appendChild(title);
+
+        for (const inst of instances) {
+          const row = document.createElement("div");
+          row.className = "fsx-instance-row";
+
+          const label = document.createElement("span");
+          label.className = "label";
+          label.textContent = inst.name || "(unnamed)";
+          row.appendChild(label);
+
+          const test = document.createElement("div");
+          row.appendChild(test);
+
+          // IMPORTANT: do not set fontVariationSettings manually here
+          const fs = new Fontsampler(
+            test,
+            buildFonts(meta, inst.instance),
+            buildOptions(meta, { showSize: true, includeFeatures: false, includeAxes: false, multiline: false })
+          );
+          await fs.init();
+
+          list.appendChild(row);
+        }
+
+        node.appendChild(list);
+      }
+    } catch (err) {
+      showError(node, "Init failed: " + err);
+    }
+  }
+
+  async function initAll() {
+    const blocks = qa("[id][data-font]");
+    const tasks = blocks.map(async (node) => {
+      const id = node.id;
+      let type = null;
+      if (PATTERNS.NAME.test(id)) type = "name";
+      else if (PATTERNS.MAIN.test(id)) type = "main";
+      else if (PATTERNS.MULTI.test(id)) type = "multi";
+      else if (PATTERNS.STYLES.test(id)) type = "styles";
+      if (!type) return;
+      await initNode(node, type);
+    });
+    await Promise.allSettled(tasks);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAll);
+  } else {
+    initAll();
+  }
+})();
+</script>
+
+<!--
+Пример ожидаемой структуры JSON, лежащего рядом с woff2 (тот же basename):
+{
+  "name": "Archaism",
+  "files": "Archaism.woff2",
+  "axes": [
+    { "tag": "wdth", "min": 0, "max": 100, "default": 50, "step": 1, "label": "Width" },
+    { "tag": "cntr", "min": 0, "max": 2, "default": 1, "step": 1, "label": "Contrast" }
+  ],
+  "features": ["liga", "dlig", "ss01", "onum"],
+  "instances": [
+    { "name": "Wd100Ct0", "instance": { "wdth": 100, "cntr": 0 } },
+    { "name": "Wd500Ct2", "instance": { "wdth": 50, "cntr": 2 } },
+    { "name": "Wd0Ct1",   "instance": { "wdth": 0,   "cntr": 1 } }
+  ]
+}
+-->
+</body>
+</html>
