@@ -236,7 +236,7 @@
     function buildOptions(meta, {
       multiline = true,
       initialText = "",
-      sizePx = 18,
+      sizePx = 38,
       readonly = false,
       showSize = false
     } = {}) {
@@ -352,7 +352,7 @@
         
         // Initialize with fontsampler for this specific instance
         const instanceOptions = {
-          initialText: inst.name,
+          initialText: inst.name || inst.name,
           multiline: false,
           lazyload: false,
           config: {
