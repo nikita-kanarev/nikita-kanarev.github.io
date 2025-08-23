@@ -7,7 +7,6 @@
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
-  
   <style>
     body { font-family: monospace; margin: 20px; line-height: 1.4; }
     .fsx-section { margin-bottom: 40px; max-width: 1200px; }
@@ -25,7 +24,7 @@
     .fsx-instances .fsjs-control-fontsize,
     .fsx-instances .fsjs-control-opentype,
     .fsx-instances .fsjs-control-axis { display: none !important; }
-    /* Override inline styles from Fontsampler */
+    /* Only for Styles Sampler testers: neutralize inline weight/style */
     [id^="styles_sampler_"] .fsjs-tester {
       font-style: initial !important;
       font-weight: initial !important;
@@ -57,16 +56,197 @@
   <script>
   (function () {
     "use strict";
-    const PATTERNS = { NAME:/^name_(.+)$/, MAIN:/^main_sampler_(.+)$/, MULTI:/^sampler_(.+)$/, STYLES:/^styles_sampler_(.+)$/ };
-    function resolveMetaUrl(fontUrl){ if(!fontUrl)return null; try{const url=new URL(fontUrl,document.baseURI); const pathname=url.pathname; const jsonPath=pathname.replace(/\.[^.]+$/,".json"); return url.origin+jsonPath+url.search+url.hash;}catch(e){return fontUrl.replace(/\.[^.]+$/,".json");}}
-    async function loadMeta(metaUrl){ const fail=(msg)=>({error:true,message:msg}); if(!metaUrl)return fail("No metadata URL provided"); try{ const res=await fetch(metaUrl,{credentials:"same-origin"}); if(!res.ok) return fail(`Failed to load metadata: ${res.status} ${res.statusText}`); const json=await res.json(); if(!json||(!json.files&&!Array.isArray(json.files))){return fail("Invalid metadata: missing 'files' property");} if(typeof json.files==="string") json.files=[json.files]; return json;}catch(err){return fail(`Metadata fetch error: ${err.message||err}`);}}
-    function buildFonts(meta,instanceOverride=null){ const base={name:meta.name||"Unknown Font",files:meta.files}; if(instanceOverride) base.instance=instanceOverride; return [base];}
-    function buildOptions(meta,{multiline=true,initialText="",sizePx=38,readonly=false,showSize=false,includeFeatures=true,includeAxes=true}={}){ const order=[]; const config={}; order.push("tester"); config.tester={editable:!readonly,label:false}; if(showSize){ order.unshift(["fontsize"]); config.fontsize={unit:"px",init:sizePx,min:8,max:256,step:1,label:"Size"};} if(includeFeatures&&Array.isArray(meta.features)&&meta.features.length){ order.push(["opentype"]); config.opentype={choices:meta.features,init:meta.features.includes('liga')?['liga']:[],label:"Features"};} if(includeAxes&&Array.isArray(meta.axes)&&meta.axes.length){ const axisRow=[]; for(const axis of meta.axes){const tag=axis.tag; axisRow.push(tag); config[tag]={init:typeof axis.default==="number"?axis.default:axis.min,min:axis.min,max:axis.max,step:axis.step||1,label:axis.label||tag.toUpperCase()};} if(axisRow.length) order.push(axisRow);} return {initialText,multiline,lazyload:false,order,config,classes:{rootClass:"fsjs-skin"}};}
-    function instanceToVarSettings(instanceObj){ if(!instanceObj) return ""; return Object.entries(instanceObj).map(([tag,value])=>`'${tag}' ${value}`).join(", "); }
-    function showError(node,message){ const el=document.createElement("div"); el.className="fsx-error"; el.setAttribute("role","alert"); el.textContent=`Error: ${message}`; node.appendChild(el);}
-    async function initNode(node,type){ const fontUrl=node.getAttribute("data-font"); if(!fontUrl){showError(node,"Missing data-font attribute"); return;} const metaUrl=node.getAttribute("data-meta")||resolveMetaUrl(fontUrl); const meta=await loadMeta(metaUrl); if(meta.error){showError(node,meta.message); return;} try{ switch(type){ case "name":{ const nameOptions={initialText:meta.name||"Font Name",multiline:false,lazyload:false,config:{tester:{editable:false,label:false}},order:["tester"],classes:{rootClass:"fsjs-skin"}}; const nameFs=new Fontsampler(node,buildFonts(meta),nameOptions); FontsamplerSkin(nameFs); nameFs.init(); break;} case "main":{ const mainOptions=buildOptions(meta,{multiline:false,initialText:"Type here",sizePx:180,readonly:false,showSize:false,includeFeatures:true,includeAxes:true}); const mainFs=new Fontsampler(node,buildFonts(meta),mainOptions); FontsamplerSkin(mainFs); mainFs.init(); break;} case "multi":{ const multiOptions=buildOptions(meta,{multiline:true,initialText:"Multi-line text here...\nType more text to test the font.",sizePx:24,readonly:false,showSize:true,includeFeatures:true,includeAxes:true}); const multiFs=new Fontsampler(node,buildFonts(meta),multiOptions); FontsamplerSkin(multiFs); multiFs.init(); break;} case "styles":{ const instances=Array.isArray(meta.instances)?meta.instances:[]; if(!instances.length){showError(node,"No named instances defined in metadata"); return;} for(const inst of instances){ const wrapper=document.createElement("div"); wrapper.className="fsx-style-item"; const label=document.createElement("div"); label.className="fsx-style-name"; label.textContent=inst.name; const mount=document.createElement("div"); wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper); const styleOptions=buildOptions(meta,{multiline:false,initialText:inst.name,sizePx:32,readonly:false,showSize:true,includeFeatures:false,includeAxes:false}); // enforce tester.style override
-                styleOptions.config.tester.style="font-style: initial; font-weight: initial;"; const styleFs=new Fontsampler(mount,buildFonts(meta,inst.instance),styleOptions); FontsamplerSkin(styleFs); styleFs.init(); const testerEl=mount.querySelector(".fsjs-tester"); if(testerEl){ const desiredFVS=instanceToVarSettings(inst.instance); function enforce(){ testerEl.style.fontVariationSettings=desiredFVS; testerEl.style.removeProperty("font-weight"); testerEl.style.removeProperty("font-style"); } enforce(); new MutationObserver(()=>enforce()).observe(testerEl,{attributes:true,attributeFilter:["style"]}); } } break;} } }catch(err){showError(node,`Fontsampler initialization failed: ${err.message}`);} }
-    async function initAll(){ const nodes=Array.from(document.querySelectorAll("div[id]")); const jobs=[]; for(const node of nodes){ const id=node.id; if(PATTERNS.NAME.test(id)) jobs.push(initNode(node,"name")); else if(PATTERNS.MAIN.test(id)) jobs.push(initNode(node,"main")); else if(PATTERNS.MULTI.test(id)) jobs.push(initNode(node,"multi")); else if(PATTERNS.STYLES.test(id)) jobs.push(initNode(node,"styles")); } await Promise.allSettled(jobs);} if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initAll);} else {initAll();} })();
+    const PATTERNS = {
+      NAME:/^name_(.+)$/,
+      MAIN:/^main_sampler_(.+)$/,
+      MULTI:/^sampler_(.+)$/,
+      STYLES:/^styles_sampler_(.+)$/
+    };
+    function resolveMetaUrl(fontUrl){
+      if(!fontUrl) return null;
+      try{
+        const url=new URL(fontUrl,document.baseURI);
+        const jsonPath=url.pathname.replace(/\.[^.]+$/,".json");
+        return url.origin+jsonPath+url.search+url.hash;
+      }catch(e){
+        return fontUrl.replace(/\.[^.]+$/,".json");
+      }
+    }
+    async function loadMeta(metaUrl){
+      const fail=(msg)=>({error:true,message:msg});
+      if(!metaUrl) return fail("No metadata URL provided");
+      try{
+        const res=await fetch(metaUrl,{credentials:"same-origin"});
+        if(!res.ok) return fail(`Failed to load metadata: ${res.status} ${res.statusText}`);
+        const json=await res.json();
+        if(!json || (!json.files && !Array.isArray(json.files))){
+          return fail("Invalid metadata: missing 'files' property");
+        }
+        if(typeof json.files==="string") json.files=[json.files];
+        return json;
+      }catch(err){
+        return fail(`Metadata fetch error: ${err.message || err}`);
+      }
+    }
+    function buildFonts(meta, instanceOverride=null){
+      const base={name:meta.name||"Unknown Font", files:meta.files};
+      if(instanceOverride) base.instance=instanceOverride;
+      return [base];
+    }
+    function buildOptions(meta,{
+      multiline=true, initialText="", sizePx=38, readonly=false,
+      showSize=false, includeFeatures=true, includeAxes=true
+    }={}){
+      const order=[]; const config={};
+      order.push("tester");
+      config.tester={editable:!readonly,label:false};
+      if(showSize){
+        order.unshift(["fontsize"]);
+        config.fontsize={unit:"px",init:sizePx,min:8,max:256,step:1,label:"Size"};
+      }
+      if(includeFeatures && Array.isArray(meta.features) && meta.features.length){
+        order.push(["opentype"]);
+        config.opentype={choices:meta.features, init: meta.features.includes('liga')?['liga']:[], label:"Features"};
+      }
+      if(includeAxes && Array.isArray(meta.axes) && meta.axes.length){
+        const axisRow=[];
+        for(const axis of meta.axes){
+          const tag=axis.tag;
+          axisRow.push(tag);
+          config[tag]={init: typeof axis.default==="number"?axis.default:axis.min,
+                       min:axis.min,max:axis.max,step:axis.step||1,label:axis.label||tag.toUpperCase()};
+        }
+        if(axisRow.length) order.push(axisRow);
+      }
+      return { initialText, multiline, lazyload:false, order, config, classes:{rootClass:"fsjs-skin"} };
+    }
+    function instanceToVarSettings(instanceObj){
+      if(!instanceObj) return "";
+      return Object.entries(instanceObj).map(([tag,value])=>`'${tag}' ${value}`).join(", ");
+    }
+    function showError(node,message){
+      const el=document.createElement("div");
+      el.className="fsx-error"; el.setAttribute("role","alert");
+      el.textContent=`Error: ${message}`; node.appendChild(el);
+    }
+    // Renders the Named Instances block under Main Sampler
+    function createNamedInstancesDisplay(container, instances, meta){
+      if(!instances || !instances.length) return;
+      const instancesContainer=document.createElement("div");
+      instancesContainer.className="fsx-instances";
+      const title=document.createElement("div");
+      title.textContent="Named Instances:";
+      title.style.cssText="font-size:12px;font-weight:bold;margin-bottom:10px;";
+      instancesContainer.appendChild(title);
+      for(const inst of instances){
+        const row=document.createElement("div"); row.className="fsx-instance-row";
+        const label=document.createElement("span"); label.className="fsx-instance-label"; label.textContent=`${inst.name}:`;
+        const sample=document.createElement("div"); sample.className="fsx-instance-sample";
+        const instanceOptions={
+          initialText:inst.name, multiline:false, lazyload:false,
+          config:{ tester:{ editable:false, label:false } },
+          order:["tester"], classes:{ rootClass:"fsjs-skin" }
+        };
+        try{
+          const fonts=buildFonts(meta, inst.instance);
+          const fs=new Fontsampler(sample, fonts, instanceOptions);
+          FontsamplerSkin(fs); fs.init();
+          const testerEl=sample.querySelector(".fsjs-tester");
+          if(testerEl){
+            testerEl.style.fontVariationSettings=instanceToVarSettings(inst.instance);
+            testerEl.style.removeProperty("font-weight");
+            testerEl.style.removeProperty("font-style");
+          }
+          const root=sample.querySelector(".fsjs-root"); if(root) root.style.display="inline-block";
+        }catch(err){
+          sample.textContent=`Error: ${err.message}`; sample.style.color="red";
+        }
+        row.appendChild(label); row.appendChild(sample); instancesContainer.appendChild(row);
+      }
+      container.appendChild(instancesContainer);
+    }
+    async function initNode(node,type){
+      const fontUrl=node.getAttribute("data-font");
+      if(!fontUrl){ showError(node,"Missing data-font attribute"); return; }
+      const metaUrl=node.getAttribute("data-meta")||resolveMetaUrl(fontUrl);
+      const meta=await loadMeta(metaUrl);
+      if(meta.error){ showError(node, meta.message); return; }
+      try{
+        switch(type){
+          case "name": {
+            const nameOptions={ initialText:meta.name||"Font Name", multiline:false, lazyload:false,
+              config:{ tester:{ editable:false, label:false } }, order:["tester"], classes:{rootClass:"fsjs-skin"} };
+            const nameFs=new Fontsampler(node, buildFonts(meta), nameOptions);
+            FontsamplerSkin(nameFs); nameFs.init();
+            break;
+          }
+          case "main": {
+            const mainOptions=buildOptions(meta,{ multiline:false, initialText:"Type here", sizePx:180,
+              readonly:false, showSize:false, includeFeatures:true, includeAxes:true });
+            const mainFs=new Fontsampler(node, buildFonts(meta), mainOptions);
+            FontsamplerSkin(mainFs); mainFs.init();
+            // restore Named Instances block under main sampler
+            setTimeout(()=>{ createNamedInstancesDisplay(node, meta.instances, meta); }, 100);
+            break;
+          }
+          case "multi": {
+            const multiOptions=buildOptions(meta,{ multiline:true,
+              initialText:"Multi-line text here...\nType more text to test the font.",
+              sizePx:24, readonly:false, showSize:true, includeFeatures:true, includeAxes:true });
+            const multiFs=new Fontsampler(node, buildFonts(meta), multiOptions);
+            FontsamplerSkin(multiFs); multiFs.init();
+            break;
+          }
+          case "styles": {
+            const instances=Array.isArray(meta.instances)?meta.instances:[];
+            if(!instances.length){ showError(node,"No named instances defined in metadata"); return; }
+            for(const inst of instances){
+              const wrapper=document.createElement("div"); wrapper.className="fsx-style-item";
+              const label=document.createElement("div"); label.className="fsx-style-name"; label.textContent=inst.name;
+              const mount=document.createElement("div");
+              wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper);
+              const styleOptions=buildOptions(meta,{ multiline:false, initialText:inst.name, sizePx:32, readonly:false,
+                                                     showSize:true, includeFeatures:false, includeAxes:false });
+              // Send desired neutral style to Fontsampler tester
+              styleOptions.config.tester.style="font-style: initial; font-weight: initial;";
+              const styleFs=new Fontsampler(mount, buildFonts(meta, inst.instance), styleOptions);
+              FontsamplerSkin(styleFs); styleFs.init();
+              const testerEl=mount.querySelector(".fsjs-tester");
+              if(testerEl){
+                const desiredFVS=instanceToVarSettings(inst.instance);
+                function enforce(){
+                  testerEl.style.fontVariationSettings=desiredFVS;
+                  testerEl.style.removeProperty("font-weight");
+                  testerEl.style.removeProperty("font-style");
+                }
+                enforce();
+                new MutationObserver((muts)=>{
+                  for(const m of muts){ if(m.type==="attributes") enforce(); }
+                }).observe(testerEl,{attributes:true, attributeFilter:["style"]});
+              }
+            }
+            break;
+          }
+        }
+      }catch(err){
+        showError(node, `Fontsampler initialization failed: ${err.message}`);
+      }
+    }
+    async function initAll(){
+      const nodes=Array.from(document.querySelectorAll("div[id]"));
+      const jobs=[];
+      for(const node of nodes){
+        const id=node.id;
+        if(PATTERNS.NAME.test(id)) jobs.push(initNode(node,"name"));
+        else if(PATTERNS.MAIN.test(id)) jobs.push(initNode(node,"main"));
+        else if(PATTERNS.MULTI.test(id)) jobs.push(initNode(node,"multi"));
+        else if(PATTERNS.STYLES.test(id)) jobs.push(initNode(node,"styles"));
+      }
+      await Promise.allSettled(jobs);
+    }
+    if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded", initAll); }
+    else { initAll(); }
+  })();
   </script>
 </body>
 </html>
