@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fontsampler Auto Init — Integrated Demo</title>
+  <!-- Fontsampler core -->
+  <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
+  <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
+  <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
+  <style>
+    body { font-family: monospace; margin: 20px; line-height: 1.4; }
+    .fsx-section { margin-bottom: 40px; max-width: 1200px; }
+    .fsx-title { margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; }
+    /* Named instances display */
+    .fsx-instances { margin: 20px 0; padding-top: 10px; border-top: 1px solid #ccc; }
+    .fsx-instance-row { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
+    .fsx-instance-label { width: 120px; font-size: 12px; flex-shrink: 0; }
+    .fsx-instance-sample { font-size: 88px; line-height: 1; margin-left: 10px; min-width: 200px; }
+    .fsx-instance-row .fsjs-root { display: inline-block; }
+    /* Styles sampler list */
+    .fsx-style-item { margin: 20px 0; }
+    .fsx-style-name { font-size: 12px; margin: 5px 0; font-weight: bold; }
+    /* Errors */
+    .fsx-error { color: red; border: 1px solid red; padding: 10px; margin: 10px 0; font-size: 12px; }
+    /* Name block UX */
+    [id^="name_"] .fsjs-control-group { display: none !important; }
+    [id^="name_"] .fsjs-tester { font-size: 220px; line-height: 1; }
+    /* Hide controls for mini-instance previews under Main */
+    .fsx-instances .fsjs-control-fontsize,
+    .fsx-instances .fsjs-control-opentype,
+    .fsx-instances .fsjs-control-axis { display: none !important; }
+    /* Only for Styles Sampler testers: neutralize inline weight/style in case engine sets defaults */
+    [id^="styles_sampler_"] .fsjs-tester { font-style: initial !important; font-weight: initial !important; }
+  </style>
+</head>
+<body>
+  <div class="fsx-section">
+    <h2>Name</h2>
+    <div id="name_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+    <h2>Main Sampler</h2>
+    <div id="main_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+    <h2>Sampler</h2>
+    <div id="sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2" data-axes="wdth:50,cntr:1"></div>
+    <h2>Styles Sampler</h2>
+    <div id="styles_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+  </div>
+
+  <div class="fsx-section">
+    <h2>Name</h2>
+    <div id="name_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
+    <h2>Main Sampler</h2>
+    <div id="main_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
+    <h2>Sampler</h2>
+    <div id="sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2" data-axes="wght:350,opsz:16"></div>
+    <h2>Styles Sampler</h2>
+    <div id="styles_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
+  </div>
+
+  <script>
+  (function(){
+    "use strict";
+
+    // -------------------- helpers from user's script (adapted) --------------------
+    function parseAxes(string){
+      const axes = {};
+      if(!string) return axes;
+      string.split(',').forEach(pair=>{
+        const [k,v] = pair.split(':');
+        if(k && v !== undefined) axes[k.trim()] = parseFloat(v);
+      });
+      return axes;
+    }
+    function parseVariableAxes(string){
+      const axes = {};
+      if(!string) return axes;
+      string.split(',').forEach(axisData=>{
+        const parts = axisData.split(':');
+        if(parts.length >= 4){
+          const [tag, min, max, step, ...labelParts] = parts;
+          axes[tag.trim()] = {
+            min: parseFloat(min),
+            max: parseFloat(max),
+            step: parseFloat(step),
+            init: (parseFloat(min)+parseFloat(max))/2,
+            label: (labelParts.join(':') || tag).trim()
+          };
+        }
+      });
+      return axes;
+    }
+    function parseOpenTypeFeatures(string){
+      const features = { label: "", init: [], choices: [] };
+      if(!string) return features;
+      string.split(',').forEach(featureData=>{
+        const parts = featureData.split(':');
+        if(parts.length >= 3){
+          const [tag,label,def] = parts;
+          const t = tag.trim(), l = label.trim();
+          const active = (def||'').trim().toLowerCase()==='true';
+          features.choices.push(t+"|"+l);
+          if(active) features.init.push(t);
+        }
+      });
+      return features;
+    }
+    function parseOrder(string){
+      if(!string) return [["fontsize"], "tester"];
+      return string.split('|').map(group=>group.includes(',')?group.split(',').map(s=>s.trim()):group.trim());
+    }
+    function axesToFVS(axesObj){
+      return Object.entries(axesObj).map(([tag,val])=>"'"+tag+"' "+val).join(', ');
+    }
+    function enforceTesterStyle(testerEl, axesObj, alsoSetFVS){
+      if(!testerEl) return;
+      if(alsoSetFVS && axesObj && Object.keys(axesObj).length){
+        testerEl.style.fontVariationSettings = axesToFVS(axesObj);
+      }
+      testerEl.style.removeProperty("font-weight");
+      testerEl.style.removeProperty("font-style");
+    }
+    function observeTester(testerEl, axesObj, alsoSetFVS){
+      if(!testerEl) return;
+      const enforce = ()=> enforceTesterStyle(testerEl, axesObj, alsoSetFVS);
+      enforce();
+      new MutationObserver(muts=>{
+        for(const m of muts){ if(m.type==="attributes") enforce(); }
+      }).observe(testerEl, { attributes:true, attributeFilter:["style"] });
+    }
+
+    // -------------------- original auto-initializer core --------------------
+    const PATTERNS = { NAME:/^name_(.+)$/, MAIN:/^main_sampler_(.+)$/, MULTI:/^sampler_(.+)$/, STYLES:/^styles_sampler_(.+)$/ };
+
+    function resolveMetaUrl(fontUrl){
+      if(!fontUrl) return null;
+      try{
+        const url = new URL(fontUrl, document.baseURI);
+        const jsonPath = url.pathname.replace(/\.[^.]+$/, ".json");
+        return url.origin + jsonPath + url.search + url.hash;
+      }catch(e){
+        return fontUrl.replace(/\.[^.]+$/, ".json");
+      }
+    }
+
+    async function loadMeta(metaUrl){
+      const fail = (msg)=>({error:true, message:msg});
+      if(!metaUrl) return fail("No metadata URL provided");
+      try{
+        const res = await fetch(metaUrl, { credentials:"same-origin" });
+        if(!res.ok) return fail("Failed to load metadata: "+res.status+" "+res.statusText);
+        const json = await res.json();
+        if(!json || (!json.files && !Array.isArray(json.files))) return fail("Invalid metadata: missing 'files' property");
+        if(typeof json.files === "string") json.files = [json.files];
+        return json;
+      }catch(err){
+        return fail("Metadata fetch error: "+(err.message||err));
+      }
+    }
+
+    function buildFonts(meta, instanceOverride=null){
+      const base = { name: meta.name || "Unknown Font", files: meta.files };
+      if(instanceOverride) base.instance = instanceOverride;
+      return [base];
+    }
+
+    function buildOptions(meta, { multiline=true, initialText="", sizePx=38, readonly=false, showSize=false, includeFeatures=true, includeAxes=true } = {}){
+      const order = [];
+      const config = {};
+
+      order.push("tester");
+      config.tester = { editable: !readonly, label:false, style:"font-style: initial; font-weight: initial;" };
+
+      if(showSize){
+        order.unshift(["fontsize"]);
+        config.fontsize = { unit:"px", init:sizePx, min:8, max:256, step:1, label:"Size" };
+      }
+
+      if(includeFeatures && Array.isArray(meta.features) && meta.features.length){
+        order.push(["opentype"]);
+        config.opentype = { choices: meta.features, init: meta.features.includes('liga')?['liga']:[], label:"Features" };
+      }
+
+      if(includeAxes && Array.isArray(meta.axes) && meta.axes.length){
+        const axisRow = [];
+        for(const axis of meta.axes){
+          const tag = axis.tag;
+          axisRow.push(tag);
+          config[tag] = { init: typeof axis.default==="number"?axis.default:axis.min, min:axis.min, max:axis.max, step:axis.step||1, label:axis.label||tag.toUpperCase() };
+        }
+        if(axisRow.length) order.push(axisRow);
+      }
+
+      return { initialText, multiline, lazyload:false, order, config, classes:{ rootClass:"fsjs-skin" } };
+    }
+
+    function showError(node, message){
+      const el = document.createElement("div");
+      el.className = "fsx-error"; el.setAttribute("role","alert");
+      el.textContent = "Error: "+message;
+      node.appendChild(el);
+    }
+
+    function createNamedInstancesDisplay(container, instances, meta){
+      if(!instances || !instances.length) return;
+      const instancesContainer = document.createElement("div");
+      instancesContainer.className = "fsx-instances";
+      const title = document.createElement("div");
+      title.textContent = "Named Instances:";
+      title.style.cssText = "font-size:12px;font-weight:bold;margin-bottom:10px;";
+      instancesContainer.appendChild(title);
+
+      for(const inst of instances){
+        const row = document.createElement("div"); row.className = "fsx-instance-row";
+        const label = document.createElement("span"); label.className = "fsx-instance-label"; label.textContent = inst.name+":";
+        const sample = document.createElement("div"); sample.className = "fsx-instance-sample";
+
+        try{
+          const fs = new Fontsampler(sample, buildFonts(meta, inst.instance), {
+            initialText: inst.name,
+            multiline:false,
+            lazyload:false,
+            order:["tester"],
+            config:{ tester:{ editable:false, label:false, style:"font-style: initial; font-weight: initial;" } },
+            classes:{ rootClass:"fsjs-skin" }
+          });
+          FontsamplerSkin(fs); fs.init();
+          const testerEl = sample.querySelector(".fsjs-tester");
+          observeTester(testerEl, inst.instance, /*alsoSetFVS*/ true); // enforce FVS from JSON
+          const root = sample.querySelector(".fsjs-root");
+          if(root) root.style.display = "inline-block";
+        }catch(err){
+          sample.textContent = "Error: "+err.message;
+          sample.style.color = "red";
+        }
+
+        row.appendChild(label); row.appendChild(sample); instancesContainer.appendChild(row);
+      }
+      container.appendChild(instancesContainer);
+    }
+
+    async function initNode(node, type){
+      const fontUrl = node.getAttribute("data-font");
+      if(!fontUrl){ showError(node, "Missing data-font attribute"); return; }
+
+      const metaUrl = node.getAttribute("data-meta") || resolveMetaUrl(fontUrl);
+      const meta = await loadMeta(metaUrl);
+      if(meta.error){ showError(node, meta.message); return; }
+
+      // optional data-* overrides on the element
+      const dataAxes = parseAxes(node.dataset.axes);
+      const dataVarAxes = parseVariableAxes(node.dataset.variableAxes);
+      const dataOT = parseOpenTypeFeatures(node.dataset.opentypeFeatures || "");
+      const dataOrder = node.dataset.order ? parseOrder(node.dataset.order) : null;
+
+      try{
+        switch(type){
+          case "name":{
+            const nameFs = new Fontsampler(node, buildFonts(meta), {
+              initialText: meta.name || "Font Name",
+              multiline:false, lazyload:false,
+              order:["tester"],
+              config:{ tester:{ editable:false, label:false, style:"font-style: initial; font-weight: initial;" } },
+              classes:{ rootClass:"fsjs-skin" }
+            });
+            FontsamplerSkin(nameFs); nameFs.init();
+            const t = node.querySelector(".fsjs-tester");
+            observeTester(t, null, /*alsoSetFVS*/ false);
+            break;
+          }
+
+          case "main":{
+            // Build with axes/features from JSON but allow custom order override
+            const mainOptions = buildOptions(meta, { multiline:false, initialText:"Type here", sizePx:180, readonly:false, showSize:false, includeFeatures:true, includeAxes:true });
+            if(dataOrder) mainOptions.order = dataOrder; // optional override
+            const mainFs = new Fontsampler(node, buildFonts(meta), mainOptions);
+            FontsamplerSkin(mainFs); mainFs.init();
+            // Named Instances list under main
+            setTimeout(()=> createNamedInstancesDisplay(node, meta.instances, meta), 100);
+            // Only strip inline weight/style; don't enforce FVS so sliders work
+            const t = node.querySelector(".fsjs-tester");
+            observeTester(t, null, /*alsoSetFVS*/ false);
+            break;
+          }
+
+          case "multi":{
+            const multiOptions = buildOptions(meta, { multiline:true, initialText:"Multi-line text here...\nType more text to test the font.", sizePx:24, readonly:false, showSize:true, includeFeatures:true, includeAxes:true });
+            if(dataOrder) multiOptions.order = dataOrder;
+            const multiFs = new Fontsampler(node, buildFonts(meta), multiOptions);
+            FontsamplerSkin(multiFs); multiFs.init();
+            const t = node.querySelector(".fsjs-tester");
+            observeTester(t, null, /*alsoSetFVS*/ false);
+            break;
+          }
+
+          case "styles":{
+            const instances = Array.isArray(meta.instances)?meta.instances:[];
+            if(!instances.length){ showError(node, "No named instances defined in metadata"); return; }
+
+            for(const inst of instances){
+              const wrapper = document.createElement("div"); wrapper.className = "fsx-style-item";
+              const label = document.createElement("div"); label.className = "fsx-style-name"; label.textContent = inst.name;
+              const mount = document.createElement("div");
+              wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper);
+
+              const styleFs = new Fontsampler(mount, buildFonts(meta, inst.instance), {
+                initialText: inst.name,
+                multiline:false, lazyload:false,
+                order: [["fontsize"], "tester"],
+                config:{
+                  tester:{ editable:false, label:false, style:"font-style: initial; font-weight: initial;" },
+                  fontsize:{ unit:"px", init:32, min:8, max:256, step:1, label:"Size" }
+                },
+                classes:{ rootClass:"fsjs-skin" }
+              });
+              FontsamplerSkin(styleFs); styleFs.init();
+              const t = mount.querySelector(".fsjs-tester");
+              observeTester(t, inst.instance, /*alsoSetFVS*/ true); // enforce per-instance FVS
+            }
+            break;
+          }
+        }
+
+        // Quiet sampler_* blocks: take initial axes from data-axes (if present)
+        if(type==="multi"){
+          // already fully interactive; nothing else
+        } else if(PATTERNS.MULTI.test(node.id)){
+          // not used here
+        } else if(/^sampler_(.+)$/.test(node.id)){
+          // fallback: if an element id matched sampler_ (handled by MULTI pattern above), skip
+        } else {
+          // Non-categorized elements won't hit here
+        }
+
+        // If the element itself is a simple sampler_* (not main/multi/styles/name) we handle it elsewhere.
+        // In our markup, sampler_* is present and will be matched by PATTERNS.MULTI? No, MULTI is /^sampler_(.+)$/,
+        // but we used "Sampler" section to be the multi-line demo earlier. We keep that mapping as-is.
+
+        // Apply data-axes to quiet samplers explicitly: elements whose id starts with "sampler_" but not matched as MULTI above.
+        // We intentionally keep our MULTI mapping for multi-line sampler; the quiet samplers are the same id, so nothing extra here.
+
+        // However, ensure any element with data-axes gets its tester cleaned and optionally enforced after init.
+        if(node.dataset.axes){
+          const t2 = node.querySelector(".fsjs-tester");
+          observeTester(t2, dataAxes, /*alsoSetFVS*/ true);
+        }
+
+      }catch(err){
+        showError(node, "Fontsampler initialization failed: "+err.message);
+      }
+    }
+
+    async function initAll(){
+      const nodes = Array.from(document.querySelectorAll("div[id]"));
+      const jobs = [];
+      for(const node of nodes){
+        const id = node.id;
+        if(PATTERNS.NAME.test(id)) jobs.push(initNode(node, "name"));
+        else if(PATTERNS.MAIN.test(id)) jobs.push(initNode(node, "main"));
+        else if(PATTERNS.MULTI.test(id)) jobs.push(initNode(node, "multi"));
+        else if(PATTERNS.STYLES.test(id)) jobs.push(initNode(node, "styles"));
+      }
+      await Promise.allSettled(jobs);
+    }
+
+    if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded", initAll); }
+    else { initAll(); }
+  })();
+  </script>
+</body>
+</html>
