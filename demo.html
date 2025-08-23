@@ -160,7 +160,7 @@
       if (!metaUrl) return fail("No metadata URL provided");
       try {
         const res = await fetch(metaUrl, { credentials: "same-origin" });
-        if (!res.ok) return fail(\`Failed to load metadata: \${res.status} \${res.statusText}\`);
+        if (!res.ok) return fail(`Failed to load metadata: ${res.status} ${res.statusText}`);
         const json = await res.json();
         if (!json || (!json.files && !Array.isArray(json.files))) {
           return fail("Invalid metadata: missing 'files' property");
@@ -168,7 +168,7 @@
         if (typeof json.files === 'string') json.files = [json.files];
         return json;
       } catch (err) {
-        return fail(\`Metadata fetch error: \${err.message || err}\`);
+        return fail(`Metadata fetch error: ${err.message || err}`);
       }
     }
 
@@ -249,7 +249,7 @@
     function instanceToVarSettings(instanceObj) {
       if (!instanceObj) return "";
       return Object.entries(instanceObj)
-        .map(([tag, value]) => \`'\${tag}' \${value}\`)
+        .map(([tag, value]) => `'${tag}' ${value}`)
         .join(", ");
     }
 
@@ -257,7 +257,7 @@
       const el = document.createElement("div");
       el.className = "fsx-error";
       el.setAttribute("role", "alert");
-      el.textContent = \`Error: \${message}\`;
+      el.textContent = `Error: ${message}`;
       node.appendChild(el);
     }
 
@@ -278,7 +278,7 @@
         
         const label = document.createElement("span");
         label.className = "fsx-instance-label";
-        label.textContent = \`\${inst.name}:\`;
+        label.textContent = `${inst.name}:`;
         
         const sample = document.createElement("div");
         sample.className = "fsx-instance-sample";
@@ -309,7 +309,7 @@
           const root = sample.querySelector(".fsjs-root");
           if (root) root.style.display = "inline-block";
         } catch (err) {
-          sample.textContent = \`Error: \${err.message}\`;
+          sample.textContent = `Error: ${err.message}`;
           sample.style.color = "red";
         }
         
@@ -344,7 +344,6 @@
             const nameFs = new Fontsampler(node, buildFonts(meta), nameOptions);
             FontsamplerSkin(nameFs);
             nameFs.init();
-            // оставляем как есть; поведение Name не меняем
             break;
           }
 
@@ -428,7 +427,7 @@
           }
         }
       } catch (err) {
-        showError(node, \`Fontsampler initialization failed: \${err.message}\`);
+        showError(node, `Fontsampler initialization failed: ${err.message}`);
       }
     }
 
