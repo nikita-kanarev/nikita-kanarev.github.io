@@ -3,123 +3,51 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fontsampler Auto Init — Universal Demo (Explicit Variations)</title>
+  <title>Fontsampler Auto Init — Universal Demo (Explicit Variations) — FIX</title>
   <!-- Include fontsampler core -->
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
   
   <style>
-    body { 
-      font-family: monospace; 
-      margin: 20px; 
-      line-height: 1.4;
-    }
-    
-    .fsx-section { 
-      margin-bottom: 40px; 
-      max-width: 1200px;
-    }
-    
-    .fsx-title { 
-      margin: 20px 0 10px 0; 
-      font-size: 14px;
-      font-weight: bold;
-    }
-    
-    /* Named instances under main sampler */
-    .fsx-instances { 
-      margin: 20px 0;
-      padding-top: 10px;
-      border-top: 1px solid #ccc;
-    }
-    
-    .fsx-instance-row {
-      margin: 10px 0;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .fsx-instance-label {
-      width: 120px;
-      font-size: 12px;
-      flex-shrink: 0;
-    }
-    
-    .fsx-instance-sample {
-      font-size: 88px;
-      line-height: 1;
-      margin-left: 10px;
-      min-width: 200px;
-    }
+    body { font-family: monospace; margin: 20px; line-height: 1.4; }
+    .fsx-section { margin-bottom: 40px; max-width: 1200px; }
+    .fsx-title { margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; }
+    .fsx-instances { margin: 20px 0; padding-top: 10px; border-top: 1px solid #ccc; }
+    .fsx-instance-row { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
+    .fsx-instance-label { width: 120px; font-size: 12px; flex-shrink: 0; }
+    .fsx-instance-sample { font-size: 88px; line-height: 1; margin-left: 10px; min-width: 200px; }
     .fsx-instance-row .fsjs-root { display: inline-block; }
-    
-    /* Styles sampler (custom, no opentype/axis controls) */
-    .fsx-styles-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 0 12px;
-      border-bottom: 1px dashed #ddd;
-      margin-bottom: 12px;
-      font-size: 12px;
-    }
+    .fsx-styles-toolbar { display: flex; align-items: center; gap: 12px; padding: 8px 0 12px; border-bottom: 1px dashed #ddd; margin-bottom: 12px; font-size: 12px; }
     .fsx-style-item { margin: 20px 0; }
     .fsx-style-name { font-size: 12px; margin: 5px 0; font-weight: bold; }
-    .fsx-style-sample {
-      line-height: 1;
-      letter-spacing: 0;
-      text-align: left;
-      /* font properties will be set inline by JS to avoid overrides */
-    }
-
-    /* Error */
-    .fsx-error {
-      color: red;
-      border: 1px solid red;
-      padding: 10px;
-      margin: 10px 0;
-      font-size: 12px;
-    }
-
-    /* name_* — no controls, fixed size 220px */
+    .fsx-style-sample { line-height: 1; letter-spacing: 0; text-align: left; }
+    .fsx-error { color: red; border: 1px solid red; padding: 10px; margin: 10px 0; font-size: 12px; }
     [id^="name_"] .fsjs-control-group { display: none !important; }
     [id^="name_"] .fsjs-tester { font-size: 220px; line-height: 1; }
-
-    /* hide controls inside the small Named Instances list */
     .fsx-instances .fsjs-control-fontsize,
     .fsx-instances .fsjs-control-opentype,
-    .fsx-instances .fsjs-control-axis {
-      display: none !important;
-    }
+    .fsx-instances .fsjs-control-axis { display: none !important; }
   </style>
 </head>
 <body>
   <div class="fsx-section">
     <h2>Name</h2>
     <div id="name_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
-    
     <h2>Main Sampler</h2>
     <div id="main_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
-    
     <h2>Sampler</h2>
     <div id="sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
-    
     <h2>Styles Sampler</h2>    
     <div id="styles_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
   </div>
-
   <div class="fsx-section">
     <h2>Name</h2>
     <div id="name_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
-    
     <h2>Main Sampler</h2>
     <div id="main_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
-    
     <h2>Sampler</h2>
     <div id="sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
-    
     <h2>Styles Sampler</h2>    
     <div id="styles_sampler_intervariable" data-font="https://nikita-kanarev.github.io/InterVariable.woff2"></div>
   </div>
@@ -140,10 +68,10 @@
       try {
         const url = new URL(fontUrl, document.baseURI);
         const pathname = url.pathname;
-        const jsonPath = pathname.replace(/\\.[^.]+$/, ".json");
+        const jsonPath = pathname.replace(/\.[^.]+$/, ".json"); /* FIXED */
         return url.origin + jsonPath + url.search + url.hash;
       } catch (e) {
-        return fontUrl.replace(/\\.[^.]+$/, ".json");
+        return fontUrl.replace(/\.[^.]+$/, ".json"); /* FIXED */
       }
     }
 
@@ -238,7 +166,6 @@
       node.appendChild(el);
     }
 
-    // Load font via FontFace API (independent from Fontsampler), so we can use it in custom blocks
     async function ensureFontLoaded(meta) {
       try {
         const loads = (meta.files || []).map(async (url) => {
@@ -248,7 +175,6 @@
         });
         await Promise.all(loads);
       } catch (e) {
-        // Non-fatal; font may still be loaded by other samplers
         console.warn("FontFace load warning:", e);
       }
     }
@@ -352,7 +278,7 @@
           case "multi": {
             const multiOptions = buildOptions(meta, { 
               multiline: true, 
-              initialText: "Multi-line text here...\\nType more text to test the font.", 
+              initialText: "Multi-line text here...\nType more text to test the font.", 
               sizePx: 24, 
               readonly: false,
               showSize: true,
@@ -372,7 +298,6 @@
             const instances = Array.isArray(meta.instances) ? meta.instances : [];
             if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
 
-            // Top toolbar with a single Size slider (affects all samples in this block)
             const toolbar = document.createElement("div");
             toolbar.className = "fsx-styles-toolbar";
             const label = document.createElement("label");
@@ -395,9 +320,7 @@
             const samples = [];
             slider.addEventListener("input", () => {
               val.textContent = slider.value + "px";
-              for (const s of samples) {
-                s.style.fontSize = slider.value + "px";
-              }
+              for (const s of samples) s.style.fontSize = slider.value + "px";
             });
 
             for (const inst of instances) {
@@ -412,10 +335,9 @@
               sample.className = "fsx-style-sample";
               sample.textContent = inst.name;
 
-              // Explicit, unambiguous font styling
               sample.style.fontFamily = meta.name || "inherit";
               sample.style.fontSize = slider.value + "px";
-              sample.style.fontWeight = "normal";   // avoid implying 'wght'
+              sample.style.fontWeight = "normal";
               sample.style.fontStyle = "normal";
               sample.style.fontStretch = "normal";
               const fv = instanceToVarSettings(inst.instance);
@@ -440,42 +362,17 @@
 
       for (const node of nodes) {
         const id = node.id;
-        if (PATTERNS.NAME.test(id)) {
-          jobs.push(initNode(node, "name"));
-        } else if (PATTERNS.MAIN.test(id)) {
-          jobs.push(initNode(node, "main"));
-        } else if (PATTERNS.MULTI.test(id)) {
-          jobs.push(initNode(node, "multi"));
-        } else if (PATTERNS.STYLES.test(id)) {
-          jobs.push(initNode(node, "styles"));
-        }
+        if (PATTERNS.NAME.test(id)) jobs.push(initNode(node, "name"));
+        else if (PATTERNS.MAIN.test(id)) jobs.push(initNode(node, "main"));
+        else if (PATTERNS.MULTI.test(id)) jobs.push(initNode(node, "multi"));
+        else if (PATTERNS.STYLES.test(id)) jobs.push(initNode(node, "styles"));
       }
       await Promise.allSettled(jobs);
     }
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initAll);
-    } else {
-      initAll();
-    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initAll);
+    else initAll();
   })();
   </script>
-
-  <!-- JSON example (for reference)
-  {
-    "name": "Archaism",
-    "files": "https://nikita-kanarev.github.io/Archaism.woff2",
-    "axes": [
-      { "tag": "wdth", "min": 0, "max": 100, "default": 50, "step": 1, "label": "Width" },
-      { "tag": "cntr", "min": 0, "max": 2, "default": 1, "step": 1, "label": "Contrast" }
-    ],
-    "features": ["liga", "dlig", "ss01", "onum"],
-    "instances": [
-      { "name": "Wd100Ct0", "instance": { "wdth": 100, "cntr": 0 } },
-      { "name": "Wd500Ct2", "instance": { "wdth": 50, "cntr": 2 } },
-      { "name": "Wd0Ct1", "instance": { "wdth": 0, "cntr": 1 } }
-    ]
-  }
-  -->
 </body>
 </html>
