@@ -351,16 +351,24 @@
         sample.textContent = "Type here";
         
         // Initialize with fontsampler for this specific instance
+        const sample = document.createElement("div");
+        sample.className = "fsx-instance-sample";
+
         const instanceOptions = {
-          initialText: inst.name || inst.name,
-          multiline: false,
-          lazyload: false,
-          config: {
-           tester: { editable: false, label: false, style: "font-size: 88px;" }
-          },
-          order: ["tester"],
-          classes: { rootClass: "fsjs-skin" }
-          };
+        initialText: inst.name,
+        multiline: false,
+        lazyload: false,
+        config: {
+          tester: { editable: false, label: false },
+          fontsize: { unit: "px", init: 88, min: 8, max: 256, step: 1, label: "Size" }
+        },
+        order: ["fontsize", "tester"],
+        classes: { rootClass: "fsjs-skin" }
+        };
+
+        const fonts = buildFonts(meta, inst.instance);
+        const fs = new Fontsampler(sample, fonts, instanceOptions);
+        fs.init();
         
         try {
           const fonts = buildFonts(meta, inst.instance);
