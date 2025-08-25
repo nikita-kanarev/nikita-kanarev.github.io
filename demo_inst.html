@@ -56,12 +56,14 @@
 <script>
 (function () {
   "use strict";
+
   const PATTERNS = {
     NAME:/^name_(.+)$/,
     MAIN:/^main_sampler_(.+)$/,
     MULTI:/^sampler_(.+)$/,
     STYLES:/^styles_sampler_(.+)$/
   };
+
   function resolveMetaUrl(fontUrl){
     if(!fontUrl) return null;
     try{
@@ -72,6 +74,7 @@
       return fontUrl.replace(/\.[^.]+$/,".json");
     }
   }
+
   async function loadMeta(metaUrl){
     const fail=(msg)=>({error:true,message:msg});
     if(!metaUrl) return fail("No metadata URL provided");
@@ -88,26 +91,34 @@
       return fail(`Metadata fetch error: ${err.message || err}`);
     }
   }
-  function buildFonts(meta, instanceOverride=null){
-    const base={name:meta.name||"Unknown Font", files:meta.files};
-    if(instanceOverride) base.instance=instanceOverride;
-    return [base];
+
+  // ВАЖНО: если передан инстанс с собственным .file — используем его вместо базового вариативного файла
+  function buildFonts(meta, instance=null){
+    if(instance && instance.file){
+      return [{ name: `${meta.name || "Font"} ${instance.name || ""}`.trim(), files: [instance.file] }];
+    }
+    return [{ name: meta.name || "Unknown Font", files: meta.files }];
   }
+
   function buildOptions(meta,{
     multiline=true, initialText="", sizePx=38, readonly=false,
     showSize=false, includeFeatures=true, includeAxes=true
   }={}){
     const order=[]; const config={};
+
     order.push("tester");
     config.tester={editable:!readonly,label:false};
+
     if(showSize){
       order.unshift(["fontsize"]);
       config.fontsize={unit:"px",init:sizePx,min:8,max:256,step:1,label:"Size"};
     }
+
     if(includeFeatures && Array.isArray(meta.features) && meta.features.length){
       order.push(["opentype"]);
       config.opentype={choices:meta.features, init: meta.features.includes('liga')?['liga']:[], label:"Features"};
     }
+
     if(includeAxes && Array.isArray(meta.axes) && meta.axes.length){
       const axisRow=[];
       for(const axis of meta.axes){
@@ -118,93 +129,144 @@
       }
       if(axisRow.length) order.push(axisRow);
     }
+
     return { initialText, multiline, lazyload:false, order, config, classes:{rootClass:"fsjs-skin"} };
   }
-  function instanceToVarSettings(instanceObj){
-    if(!instanceObj) return "";
-    return Object.entries(instanceObj).map(([tag,value])=>`'${tag}' ${value}`).join(", ");
-  }
+
   function showError(node,message){
     const el=document.createElement("div");
     el.className="fsx-error"; el.setAttribute("role","alert");
-    el.textContent=`Error: ${message}`; node.appendChild(el);
+    el.textContent=`Error: ${message}`;
+    node.appendChild(el);
   }
-  // Named Instances в Main Sampler — теперь без названий, в ряд
+
+  // Named Instances в Main: без текстовых ярлыков, в одну строку, каждая — своим .file
   function createNamedInstancesDisplay(container, instances, meta){
     if(!instances || !instances.length) return;
-    const instancesContainer=document.createElement("div");
-    instancesContainer.className="fsx-instances";
-    instancesContainer.style.display="flex";
-    instancesContainer.style.gap="20px";
+
+    const wrap=document.createElement("div");
+    wrap.className="fsx-instances";
+    // в ряд
+    Object.assign(wrap.style, {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "20px",
+      alignItems: "flex-end"
+    });
+
     for(const inst of instances){
-      const sample=document.createElement("div"); sample.className="fsx-instance-sample";
-      const instanceOptions={
-        initialText:"", multiline:false, lazyload:false,
+      const sample=document.createElement("div");
+      sample.className="fsx-instance-sample";
+
+      const options={
+        initialText: inst.name,     // сам образец — это имя инстанса, без отдельной подписи
+        multiline:false,
+        lazyload:false,
         config:{ tester:{ editable:false, label:false } },
-        order:["tester"], classes:{ rootClass:"fsjs-skin" }
+        order:["tester"],
+        classes:{ rootClass:"fsjs-skin" }
       };
+
       try{
-        const fonts=buildFonts(meta, inst.instance);
-        const fs=new Fontsampler(sample, fonts, instanceOptions);
+        const fs=new Fontsampler(sample, buildFonts(meta, inst), options);
         FontsamplerSkin(fs); fs.init();
+        // убрать навязанные inline-стили веса/наклона
         const testerEl=sample.querySelector(".fsjs-tester");
         if(testerEl){
-          testerEl.style.fontVariationSettings=instanceToVarSettings(inst.instance);
           testerEl.style.removeProperty("font-weight");
           testerEl.style.removeProperty("font-style");
-          testerEl.textContent=inst.name; // просто вывод самого текста шрифтом
         }
       }catch(err){
-        sample.textContent=`Error: ${err.message}`; sample.style.color="red";
+        sample.textContent=`Error: ${err.message}`;
+        sample.style.color="red";
       }
-      instancesContainer.appendChild(sample);
+
+      wrap.appendChild(sample);
     }
-    container.appendChild(instancesContainer);
+
+    container.appendChild(wrap);
   }
+
   async function initNode(node,type){
     const fontUrl=node.getAttribute("data-font");
     if(!fontUrl){ showError(node,"Missing data-font attribute"); return; }
+
     const metaUrl=node.getAttribute("data-meta")||resolveMetaUrl(fontUrl);
     const meta=await loadMeta(metaUrl);
     if(meta.error){ showError(node, meta.message); return; }
+
     try{
       switch(type){
         case "name": {
-          const nameOptions={ initialText:meta.name||"Font Name", multiline:false, lazyload:false,
-            config:{ tester:{ editable:false, label:false } }, order:["tester"], classes:{rootClass:"fsjs-skin"} };
-          const nameFs=new Fontsampler(node, buildFonts(meta), nameOptions);
-          FontsamplerSkin(nameFs); nameFs.init();
+          const nameOptions={
+            initialText:meta.name||"Font Name",
+            multiline:false, lazyload:false,
+            config:{ tester:{ editable:false, label:false } },
+            order:["tester"],
+            classes:{rootClass:"fsjs-skin"}
+          };
+          const fs=new Fontsampler(node, buildFonts(meta), nameOptions);
+          FontsamplerSkin(fs); fs.init();
           break;
         }
+
         case "main": {
-          const mainOptions=buildOptions(meta,{ multiline:false, initialText:"Type here", sizePx:180,
-            readonly:false, showSize:false, includeFeatures:true, includeAxes:true });
-          const mainFs=new Fontsampler(node, buildFonts(meta), mainOptions);
-          FontsamplerSkin(mainFs); mainFs.init();
-          setTimeout(()=>{ createNamedInstancesDisplay(node, meta.instances, meta); }, 100);
+          const mainOptions=buildOptions(meta,{
+            multiline:false,
+            initialText:"Type here",
+            sizePx:180,
+            readonly:false,
+            showSize:false,
+            includeFeatures:true,
+            includeAxes:true
+          });
+          const fs=new Fontsampler(node, buildFonts(meta), mainOptions);
+          FontsamplerSkin(fs); fs.init();
+
+          // ниже — инстансы в ряд, каждый своим .file
+          setTimeout(()=>{ createNamedInstancesDisplay(node, meta.instances, meta); }, 0);
           break;
         }
+
         case "multi": {
-          const multiOptions=buildOptions(meta,{ multiline:true,
+          const multiOptions=buildOptions(meta,{
+            multiline:true,
             initialText:"Multi-line text here...\nType more text to test the font.",
-            sizePx:24, readonly:false, showSize:true, includeFeatures:true, includeAxes:true });
-          const multiFs=new Fontsampler(node, buildFonts(meta), multiOptions);
-          FontsamplerSkin(multiFs); multiFs.init();
+            sizePx:24,
+            readonly:false,
+            showSize:true,
+            includeFeatures:true,
+            includeAxes:true
+          });
+          const fs=new Fontsampler(node, buildFonts(meta), multiOptions);
+          FontsamplerSkin(fs); fs.init();
           break;
         }
+
         case "styles": {
           const instances=Array.isArray(meta.instances)?meta.instances:[];
           if(!instances.length){ showError(node,"No named instances defined in metadata"); return; }
+
           for(const inst of instances){
             const wrapper=document.createElement("div"); wrapper.className="fsx-style-item";
             const label=document.createElement("div"); label.className="fsx-style-name"; label.textContent=inst.name;
             const mount=document.createElement("div");
             wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper);
-            const styleOptions=buildOptions(meta,{ multiline:false, initialText:inst.name, sizePx:96, readonly:false,
-                                                   showSize:true, includeFeatures:false, includeAxes:false });
+
+            const styleOptions=buildOptions(meta,{
+              multiline:false,
+              initialText:inst.name,
+              sizePx:96,               // увеличено до 96px
+              readonly:false,
+              showSize:true,
+              includeFeatures:false,   // для статического файла фичи/оси скрыты
+              includeAxes:false
+            });
+            // нейтрализуем возможные inline-стили от скина
             styleOptions.config.tester.style="font-style: initial; font-weight: initial;";
-            const styleFs=new Fontsampler(mount, buildFonts(meta, inst.instance), styleOptions);
-            FontsamplerSkin(styleFs); styleFs.init();
+
+            const fs=new Fontsampler(mount, buildFonts(meta, inst), styleOptions);
+            FontsamplerSkin(fs); fs.init();
           }
           break;
         }
@@ -213,6 +275,7 @@
       showError(node, `Fontsampler initialization failed: ${err.message}`);
     }
   }
+
   async function initAll(){
     const nodes=Array.from(document.querySelectorAll("div[id]"));
     const jobs=[];
@@ -225,6 +288,7 @@
     }
     await Promise.allSettled(jobs);
   }
+
   if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded", initAll); }
   else { initAll(); }
 })();
