@@ -20,7 +20,7 @@
     .fsx-style-name { font-size: 12px; margin: 5px 0; font-weight: bold; }
     .fsx-error { color: red; border: 1px solid red; padding: 10px; margin: 10px 0; font-size: 12px; }
     [id^="name_"] .fsjs-control-group { display: none !important; }
-    [id^="name_"] .fsjs-tester { font-size: 220px; line-height: 1; }
+    [id^="name_"] .fsjs-tester { font-size: 200px; line-height: 1; }
     .fsx-instances .fsjs-control-fontsize,
     .fsx-instances .fsjs-control-opentype,
     .fsx-instances .fsjs-control-axis { display: none !important; }
@@ -92,7 +92,6 @@
     }
   }
 
-  // ВАЖНО: если передан инстанс с собственным .file — используем его вместо базового вариативного файла
   function buildFonts(meta, instance=null){
     if(instance && instance.file){
       return [{ name: `${meta.name || "Font"} ${instance.name || ""}`.trim(), files: [instance.file] }];
@@ -105,7 +104,6 @@
     showSize=false, includeFeatures=true, includeAxes=true
   }={}){
     const order=[]; const config={};
-
     order.push("tester");
     config.tester={editable:!readonly,label:false};
 
@@ -140,37 +138,30 @@
     node.appendChild(el);
   }
 
-  // Named Instances в Main: без текстовых ярлыков, в одну строку, каждая — своим .file
   function createNamedInstancesDisplay(container, instances, meta){
     if(!instances || !instances.length) return;
-
     const wrap=document.createElement("div");
     wrap.className="fsx-instances";
-    // в ряд
     Object.assign(wrap.style, {
       display: "flex",
       flexWrap: "wrap",
       gap: "20px",
       alignItems: "flex-end"
     });
-
     for(const inst of instances){
       const sample=document.createElement("div");
       sample.className="fsx-instance-sample";
-
       const options={
-        initialText: inst.name,     // сам образец — это имя инстанса, без отдельной подписи
+        initialText: inst.name,
         multiline:false,
         lazyload:false,
         config:{ tester:{ editable:false, label:false } },
         order:["tester"],
         classes:{ rootClass:"fsjs-skin" }
       };
-
       try{
         const fs=new Fontsampler(sample, buildFonts(meta, inst), options);
         FontsamplerSkin(fs); fs.init();
-        // убрать навязанные inline-стили веса/наклона
         const testerEl=sample.querySelector(".fsjs-tester");
         if(testerEl){
           testerEl.style.removeProperty("font-weight");
@@ -180,17 +171,14 @@
         sample.textContent=`Error: ${err.message}`;
         sample.style.color="red";
       }
-
       wrap.appendChild(sample);
     }
-
     container.appendChild(wrap);
   }
 
   async function initNode(node,type){
     const fontUrl=node.getAttribute("data-font");
     if(!fontUrl){ showError(node,"Missing data-font attribute"); return; }
-
     const metaUrl=node.getAttribute("data-meta")||resolveMetaUrl(fontUrl);
     const meta=await loadMeta(metaUrl);
     if(meta.error){ showError(node, meta.message); return; }
@@ -200,13 +188,20 @@
         case "name": {
           const nameOptions={
             initialText:meta.name||"Font Name",
-            multiline:false, lazyload:false,
+            multiline:false,
+            lazyload:false,
             config:{ tester:{ editable:false, label:false } },
             order:["tester"],
             classes:{rootClass:"fsjs-skin"}
           };
           const fs=new Fontsampler(node, buildFonts(meta), nameOptions);
           FontsamplerSkin(fs); fs.init();
+          // фиксированный размер 200px
+          const testerEl=node.querySelector(".fsjs-tester");
+          if(testerEl){
+            testerEl.style.fontSize="200px";
+            testerEl.style.lineHeight="1";
+          }
           break;
         }
 
@@ -222,8 +217,6 @@
           });
           const fs=new Fontsampler(node, buildFonts(meta), mainOptions);
           FontsamplerSkin(fs); fs.init();
-
-          // ниже — инстансы в ряд, каждый своим .file
           setTimeout(()=>{ createNamedInstancesDisplay(node, meta.instances, meta); }, 0);
           break;
         }
@@ -246,25 +239,21 @@
         case "styles": {
           const instances=Array.isArray(meta.instances)?meta.instances:[];
           if(!instances.length){ showError(node,"No named instances defined in metadata"); return; }
-
           for(const inst of instances){
             const wrapper=document.createElement("div"); wrapper.className="fsx-style-item";
             const label=document.createElement("div"); label.className="fsx-style-name"; label.textContent=inst.name;
             const mount=document.createElement("div");
             wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper);
-
             const styleOptions=buildOptions(meta,{
               multiline:false,
               initialText:inst.name,
-              sizePx:96,               // увеличено до 96px
+              sizePx:96,
               readonly:false,
               showSize:true,
-              includeFeatures:false,   // для статического файла фичи/оси скрыты
+              includeFeatures:false,
               includeAxes:false
             });
-            // нейтрализуем возможные inline-стили от скина
             styleOptions.config.tester.style="font-style: initial; font-weight: initial;";
-
             const fs=new Fontsampler(mount, buildFonts(meta, inst), styleOptions);
             FontsamplerSkin(fs); fs.init();
           }
