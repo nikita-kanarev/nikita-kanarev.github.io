@@ -246,20 +246,44 @@
 
         try {
           switch (type) {
+
             case "name": {
-              const nameOptions = {
-                initialText: meta.name || "Font Name",
+              const nameOptions = buildOptions(meta, {
                 multiline: false,
-                lazyload: false,
-                config: { tester: { editable: false, label: false } },
-                order: ["tester"],
-                classes: { rootClass: "fsjs-skin" }
+                initialText: meta.name || "Font Name",
+                // showSize не включаем — слайдера не будет
+                includeFeatures: false,
+                includeAxes: false
+              });
+
+              // задать размер БЕЗ слайдера
+              nameOptions.config.fontsize = { unit: "px", init: 340 };
+
+              // по желанию — фиксируем метрику строки
+              nameOptions.config.tester = {
+                ...nameOptions.config.tester,
+                style: "line-height:1"
               };
+
               const fs = new Fontsampler(node, buildFonts(meta), nameOptions);
               FontsamplerSkin(fs);
               fs.init();
               break;
             }
+            // case "name": {
+            //   const nameOptions = {
+            //     initialText: meta.name || "Font Name",
+            //     multiline: false,
+            //     lazyload: false,
+            //     config: { tester: { editable: false, label: false } },
+            //     order: ["tester"],
+            //     classes: { rootClass: "fsjs-skin" }
+            //   };
+            //   const fs = new Fontsampler(node, buildFonts(meta), nameOptions);
+            //   FontsamplerSkin(fs);
+            //   fs.init();
+            //   break;
+            // }
 
             // case "main": {
             //   const mainOptions = buildOptions(meta, {
