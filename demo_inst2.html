@@ -10,52 +10,62 @@
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
 
-  <style>
-    body { font-family: monospace; margin: 20px; line-height: 1.4; }
+<style>
+  body { font-family: monospace; margin: 20px; line-height: 1.4; }
 
-    .fsx-section { margin-bottom: 40px; max-width: 1200px; }
-    .fsx-title { margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; }
+  .fsx-section { margin-bottom: 40px; max-width: 1200px; }
+  .fsx-title { margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; }
 
-    /* Named Instances под Main — сетка карточек */
-    .fsx-instances {
-      margin: 20px 0;
-      padding-top: 10px;
-      display: grid; /* убран !important, источник правды — CSS */
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 24px;
-      align-items: end;
-    }
+  /* Named Instances под Main — сетка карточек */
+  .fsx-instances {
+    margin: 20px 0;
+    padding-top: 10px;
+    display: grid; /* убран !important, источник правды — CSS */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    align-items: end;
+  }
 
-    .fsx-instance-sample { width: 100%; text-align: center; }
-    .fsx-instance-sample .fsjs-tester {
-      white-space: nowrap;
-      display: block;
-      margin: 0 auto;
-      line-height: 1;
-    }
+  .fsx-instance-sample { width: 100%; text-align: center; }
+  .fsx-instance-sample .fsjs-tester {
+    white-space: nowrap;
+    display: block;
+    margin: 0 auto;
+    line-height: 1;
+  }
 
-    /* Styles Sampler */
-    .fsx-style-item { margin: 20px 0; }
-    .fsx-style-name { font-size: 12px; margin: 5px 0; font-weight: bold; }
+  /* Styles Sampler */
+  .fsx-style-item { margin: 20px 0; }
+  .fsx-style-name { font-size: 12px; margin: 5px 0; font-weight: bold; }
 
-    /* Ошибки */
-    .fsx-error { color: red; border: 1px solid red; padding: 10px; margin: 10px 0; font-size: 12px; }
+  /* Ошибки */
+  .fsx-error { color: red; padding: 10px; margin: 10px 0; font-size: 12px; border: 1px solid red; }
 
-    /* Name Sampler: убираем контролы и фиксируем размер (один источник — CSS) */
-    [id^="name_"] .fsjs-control-group { display: none !important; }
-    [id^="name_"] .fsjs-tester { font-size: 200px; line-height: 1; }
+  /* Name Sampler: убираем контролы и фиксируем размер (один источник — CSS) */
+  [id^="name_"] .fsjs-control-group { display: none !important; }
+  [id^="name_"] .fsjs-tester { font-size: 200px; line-height: 1; }
 
-    /* Убираем контролы у карточек Named Instances под основным сэмплером */
-    .fsx-instances .fsjs-control-fontsize,
-    .fsx-instances .fsjs-control-opentype,
-    .fsx-instances .fsjs-control-axis { display: none !important; }
+  /* Убираем контролы у карточек Named Instances под основным сэмплером */
+  .fsx-instances .fsjs-control-fontsize,
+  .fsx-instances .fsjs-control-opentype,
+  .fsx-instances .fsjs-control-axis { display: none !important; }
 
-    /* Только для Styles Sampler: нейтрализуем inline weight/style (источник — CSS) */
-    [id^="styles_sampler_"] .fsjs-tester {
-      font-style: initial !important;
-      font-weight: initial !important;
-    }
-  </style>
+  /* Только для Styles Sampler:
+     1) нейтрализуем inline weight/style
+     2) делаем однострочный вывод с обрезкой и многоточием */
+  [id^="styles_sampler_"] .fsjs-tester {
+    font-style: initial !important;
+    font-weight: initial !important;
+
+    white-space: nowrap;       /* всегда одна строка */
+    overflow: hidden;          /* скрываем лишнее */
+    text-overflow: ellipsis;   /* многоточие в конце */
+    line-height: 1;            /* опционально — плотная метрика */
+    display: block;            /* для надёжной работы ellipsis */
+    width: 100%;               /* чтобы ограничение шло по контейнеру */
+  }
+</style>
+
 </head>
 
 <body>
