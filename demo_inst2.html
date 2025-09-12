@@ -276,15 +276,15 @@
 
             case "main": {
               const mainOptions = buildOptions(meta, {
+                includeAxes: true,
+                includeFeatures: true,
                 multiline: false,
                 initialText: meta.name || "Font Name",
-                showSize: false,          // слайдера нет
-                includeFeatures: true,
-                includeAxes: true
+                showSize: false          // слайдера нет
               });
 
               // добавляем начальный размер через конфиг, не включая контрол
-              mainOptions.config.fontsize = { unit: "px", init: 240 };
+              mainOptions.config.fontsize = { unit: "px", init: 240, min: 80, max: 512, step: 1 };
 
               const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
               FontsamplerSkin(fs);
