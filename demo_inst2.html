@@ -252,49 +252,16 @@
                 multiline: false,
                 initialText: meta.name || "Font Name",
                 includeFeatures: false,
-                includeAxes: false
+                includeAxes: false,
+                config:{ tester:{ editable:false, label:false } }
               });
 
-              // важное: init + max > 240
-              nameOptions.config.fontsize = { unit: "px", init: 240, min: 8, max: 512, step: 1 };
+              nameOptions.config.fontsize = { unit: "px", init: 240, min: 80, max: 512, step: 1 };
 
               const fs = new Fontsampler(node, buildFonts(meta), nameOptions);
               FontsamplerSkin(fs); fs.init();
               break;
             }
-            // case "name": {
-            //   const nameOptions = {
-            //     initialText: meta.name || "Font Name",
-            //     multiline: false,
-            //     lazyload: false,
-            //     config: { tester: { editable: false, label: false } },
-            //     order: ["tester"],
-            //     classes: { rootClass: "fsjs-skin" }
-            //   };
-            //   const fs = new Fontsampler(node, buildFonts(meta), nameOptions);
-            //   FontsamplerSkin(fs);
-            //   fs.init();
-            //   break;
-            // }
-
-            // case "main": {
-            //   const mainOptions = buildOptions(meta, {
-            //     multiline: false,
-            //     initialText: meta.name || "Font Name",
-            //     sizePx: 240,
-            //     readonly: false,
-            //     showSize: false,
-            //     includeFeatures: true,
-            //     includeAxes: true
-            //   });
-            //   const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
-            //   FontsamplerSkin(fs);
-            //   fs.init();
-
-            //   // отложим создание «Named Instances» на микротаску после init
-            //   queueMicrotask(() => createNamedInstancesDisplay(node, meta.instances, meta));
-            //   break;
-            // }
 
             case "main": {
               const mainOptions = buildOptions(meta, {
