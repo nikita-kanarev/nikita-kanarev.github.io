@@ -20,7 +20,6 @@
     .fsx-instances {
       margin: 20px 0;
       padding-top: 10px;
-      border-top: 1px solid #ccc;
       display: grid; /* убран !important, источник правды — CSS */
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 24px;
@@ -262,21 +261,50 @@
               break;
             }
 
+            // case "main": {
+            //   const mainOptions = buildOptions(meta, {
+            //     multiline: false,
+            //     initialText: meta.name || "Font Name",
+            //     sizePx: 240,
+            //     readonly: false,
+            //     showSize: false,
+            //     includeFeatures: true,
+            //     includeAxes: true
+            //   });
+            //   const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
+            //   FontsamplerSkin(fs);
+            //   fs.init();
+
+            //   // отложим создание «Named Instances» на микротаску после init
+            //   queueMicrotask(() => createNamedInstancesDisplay(node, meta.instances, meta));
+            //   break;
+            // }
+
             case "main": {
               const mainOptions = buildOptions(meta, {
-                multiline: false,
-                initialText: "Type here",
-                sizePx: 240,
-                readonly: false,
-                showSize: false,
-                includeFeatures: true,
-                includeAxes: true
-              });
-              const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
+              multiline: false,
+              initialText: meta.name || "Font Name",
+              showSize: false,
+              includeFeatures: true,
+              includeAxes: true
+            });
+
+            const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
               FontsamplerSkin(fs);
               fs.init();
 
-              // отложим создание «Named Instances» на микротаску после init
+              // После инициализации элемент уже в DOM
+              const testerEl = node.querySelector(".fsjs-tester");
+              if (testerEl) {
+                // Нормально (без !important):
+                // testerEl.style.fontSize = "240px";
+                // testerEl.style.lineHeight = "1";
+
+                // Жёстко, если в CSS есть !important:
+                testerEl.style.setProperty("font-size", "240px", "important");
+                testerEl.style.setProperty("line-height", "1", "important");
+              }
+
               queueMicrotask(() => createNamedInstancesDisplay(node, meta.instances, meta));
               break;
             }
