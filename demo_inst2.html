@@ -282,32 +282,24 @@
 
             case "main": {
               const mainOptions = buildOptions(meta, {
-              multiline: false,
-              initialText: meta.name || "Font Name",
-              showSize: false,
-              includeFeatures: true,
-              includeAxes: true
-            });
+                multiline: false,
+                initialText: meta.name || "Font Name",
+                showSize: false,          // слайдера нет
+                includeFeatures: true,
+                includeAxes: true
+              });
 
-            const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
+              // добавляем начальный размер через конфиг, не включая контрол
+              mainOptions.config.fontsize = { unit: "px", init: 240 };
+
+              const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
               FontsamplerSkin(fs);
               fs.init();
-
-              // После инициализации элемент уже в DOM
-              const testerEl = node.querySelector(".fsjs-tester");
-              if (testerEl) {
-                // Нормально (без !important):
-                // testerEl.style.fontSize = "240px";
-                // testerEl.style.lineHeight = "1";
-
-                // Жёстко, если в CSS есть !important:
-                testerEl.style.setProperty("font-size", "240px", "important");
-                testerEl.style.setProperty("line-height", "1", "important");
-              }
 
               queueMicrotask(() => createNamedInstancesDisplay(node, meta.instances, meta));
               break;
             }
+
 
             case "multi": {
               const multiOptions = buildOptions(meta, {
