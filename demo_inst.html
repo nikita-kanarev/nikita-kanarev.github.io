@@ -29,7 +29,6 @@
   .fsx-instances {
     margin: 20px 0;
     padding-top: 10px;
-    border-top: 1px solid #ccc;
     display: grid !important;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 24px;
@@ -271,7 +270,7 @@
           const mainOptions=buildOptions(meta,{
             multiline:false,
             initialText:"Type here",
-            sizePx:180,
+            sizePx:380,
             readonly:false,
             showSize:false,
             includeFeatures:true,
@@ -287,7 +286,7 @@
           const multiOptions=buildOptions(meta,{
             multiline:true,
             initialText:"Multi-line text here...\nType more text to test the font.",
-            sizePx:24,
+            sizePx:96,
             readonly:false,
             showSize:true,
             includeFeatures:true,
