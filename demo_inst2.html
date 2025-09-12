@@ -251,23 +251,15 @@
               const nameOptions = buildOptions(meta, {
                 multiline: false,
                 initialText: meta.name || "Font Name",
-                // showSize не включаем — слайдера не будет
                 includeFeatures: false,
                 includeAxes: false
               });
 
-              // задать размер БЕЗ слайдера
-              nameOptions.config.fontsize = { unit: "px", init: 340 };
-
-              // по желанию — фиксируем метрику строки
-              nameOptions.config.tester = {
-                ...nameOptions.config.tester,
-                style: "line-height:1"
-              };
+              // важное: init + max > 240
+              nameOptions.config.fontsize = { unit: "px", init: 240, min: 8, max: 512, step: 1 };
 
               const fs = new Fontsampler(node, buildFonts(meta), nameOptions);
-              FontsamplerSkin(fs);
-              fs.init();
+              FontsamplerSkin(fs); fs.init();
               break;
             }
             // case "name": {
