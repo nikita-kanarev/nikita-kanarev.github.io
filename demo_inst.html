@@ -7,29 +7,91 @@
   <script src="https://nikita-kanarev.github.io/fontsampler.js"></script>
   <script src="https://nikita-kanarev.github.io/fontsampler-skin.js"></script>
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
-  <style>
-    body { font-family: monospace; margin: 20px; line-height: 1.4; }
-    .fsx-section { margin-bottom: 40px; max-width: 1200px; }
-    .fsx-title { margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; }
-    .fsx-instances { margin: 20px 0; padding-top: 10px; border-top: 1px solid #ccc; }
-    .fsx-instance-row { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
-    .fsx-instance-label { width: 120px; font-size: 12px; flex-shrink: 0; }
-    .fsx-instance-sample { font-size: 88px; line-height: 1; margin-left: 10px; min-width: 200px; }
-    .fsx-instance-row .fsjs-root { display: inline-block; }
-    .fsx-style-item { margin: 20px 0; }
-    .fsx-style-name { font-size: 12px; margin: 5px 0; font-weight: bold; }
-    .fsx-error { color: red; border: 1px solid red; padding: 10px; margin: 10px 0; font-size: 12px; }
-    [id^="name_"] .fsjs-control-group { display: none !important; }
-    [id^="name_"] .fsjs-tester { font-size: 200px; line-height: 1; }
-    .fsx-instances .fsjs-control-fontsize,
-    .fsx-instances .fsjs-control-opentype,
-    .fsx-instances .fsjs-control-axis { display: none !important; }
-    /* Only for Styles Sampler testers: neutralize inline weight/style */
-    [id^="styles_sampler_"] .fsjs-tester {
-      font-style: initial !important;
-      font-weight: initial !important;
-    }
-  </style>
+<style>
+  body {
+    font-family: monospace;
+    margin: 20px;
+    line-height: 1.4;
+  }
+
+  .fsx-section {
+    margin-bottom: 40px;
+    max-width: 1200px;
+  }
+
+  .fsx-title {
+    margin: 20px 0 10px 0;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  /* Named Instances под Main — сетка карточек */
+  .fsx-instances {
+    margin: 20px 0;
+    padding-top: 10px;
+    border-top: 1px solid #ccc;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    align-items: end;
+  }
+
+  .fsx-instance-sample {
+    width: 100%;
+    text-align: center;
+  }
+
+  .fsx-instance-sample .fsjs-tester {
+    white-space: nowrap;
+    display: block;
+    margin: 0 auto;
+    line-height: 1;
+  }
+
+  /* Styles Sampler */
+  .fsx-style-item {
+    margin: 20px 0;
+  }
+
+  .fsx-style-name {
+    font-size: 12px;
+    margin: 5px 0;
+    font-weight: bold;
+  }
+
+  /* Ошибки */
+  .fsx-error {
+    color: red;
+    border: 1px solid red;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 12px;
+  }
+
+  /* Name Sampler: убираем контролы и фиксируем размер */
+  [id^="name_"] .fsjs-control-group {
+    display: none !important;
+  }
+
+  [id^="name_"] .fsjs-tester {
+    font-size: 200px;
+    line-height: 1;
+  }
+
+  /* Убираем контролы у Named Instances */
+  .fsx-instances .fsjs-control-fontsize,
+  .fsx-instances .fsjs-control-opentype,
+  .fsx-instances .fsjs-control-axis {
+    display: none !important;
+  }
+
+  /* Только для Styles Sampler: нейтрализация inline weight/style */
+  [id^="styles_sampler_"] .fsjs-tester {
+    font-style: initial !important;
+    font-weight: initial !important;
+  }
+</style>
+
 </head>
 <body>
   <div class="fsx-section">
