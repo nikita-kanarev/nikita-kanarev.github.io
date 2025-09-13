@@ -283,6 +283,15 @@
                 showSize: false          // слайдера нет
               });
 
+
+              // Явно задаём порядок
+              const axisTags = (meta.axes || []).map(a => a.tag);
+              mainOptions.order = [
+                axisTags,     // ряд с осями (если есть)
+                "opentype",   // ряд с фичами
+                "tester"      // поле ввода
+              ];
+
               // добавляем начальный размер через конфиг, не включая контрол
               mainOptions.config.fontsize = { unit: "px", init: 240, min: 80, max: 512, step: 1 };
 
@@ -293,7 +302,6 @@
               queueMicrotask(() => createNamedInstancesDisplay(node, meta.instances, meta));
               break;
             }
-
 
             case "multi": {
               const multiOptions = buildOptions(meta, {
