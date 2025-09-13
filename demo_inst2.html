@@ -324,7 +324,7 @@
 
               multiOptions.config = {
                 ...multiOptions.config,
-                fontsize: { unit: "px", init: 24, min: 12, max: 256, step: 1 },
+                fontsize: { unit: "px", init: 124, min: 12, max: 256, step: 1 },
                 tester: {
                   ...multiOptions.config.tester,
                   editable: true,
@@ -333,7 +333,7 @@
                   style: "line-height:1.3"
                 }
               };
-              
+
               const fs = new Fontsampler(node, buildFonts(meta), multiOptions);
               FontsamplerSkin(fs);
               fs.init();
