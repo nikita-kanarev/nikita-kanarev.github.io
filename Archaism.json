@@ -7,8 +7,9 @@
     ],
     "features": ["liga", "dlig", "ss01", "onum"],
     "instances": [
-      { "name": "Wd100Ct0",    "file": "https://nikita-kanarev.github.io/Archaism-Ct0Wd100-Trial.woff2" },
-      { "name": "Wd50Ct2",    "file": "https://nikita-kanarev.github.io/Archaism-Ct2Wd50-Trial.woff2" },
-      { "name": "Wd0Ct1",    "file": "https://nikita-kanarev.github.io/Archaism-Ct1Wd0-Trial.woff2" }
-    ]
+      { "name": "Wd100Ct0", "file": "https://nikita-kanarev.github.io/Archaism-Ct0Wd100-Trial.woff2", "text": "Contrast" },
+      { "name": "Wd50Ct2", "file": "https://nikita-kanarev.github.io/Archaism-Ct2Wd50-Trial.woff2", "text": "2Contrast"  },
+      { "name": "Wd0Ct1", "file": "https://nikita-kanarev.github.io/Archaism-Ct1Wd0-Trial.woff2", "text": "3Contrast"  }
+    ],
+    "defaultStyleText": "Запасной текст для стилей"
   }
