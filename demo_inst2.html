@@ -71,7 +71,9 @@
 <body>
   <div class="fsx-section">
     <h2>Main Sampler</h2>
-    <div id="main_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2"></div>
+    <div id="main_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2" 
+    data-link="https://example.com/specimen/archaism"
+    data-link-target="_blank">></div>
 
     <hr>
 
@@ -248,6 +250,21 @@
         container.appendChild(wrap);
       }
 
+      function makeMainBlockClickable(node) {
+        const url = node.dataset.link;
+        if (!url) return;
+        const target = node.dataset.linkTarget || "_blank";
+
+        node.setAttribute("role", "link");
+        node.tabIndex = 0;
+
+        const open = () => window.open(url, target);
+        node.addEventListener("click", open);
+        node.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+        });
+      }
+
       async function initNode(node, type) {
         const fontUrl = node.getAttribute("data-font");
         if (!fontUrl) { showError(node, "Missing data-font attribute"); return; }
@@ -300,6 +317,8 @@
               const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
               FontsamplerSkin(fs);
               fs.init();
+
+              makeMainBlockClickable(node);
 
               queueMicrotask(() => createNamedInstancesDisplay(node, meta.instances, meta));
               break;
