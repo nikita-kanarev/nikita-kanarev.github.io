@@ -267,6 +267,26 @@
         });
       }
 
+        function getInstanceInitialText(inst, meta) {
+          // Приоритеты:
+          // 1) inst.text или inst.sampleText
+          // 2) meta.instanceTexts по имени (если захотите словарь вида {"Regular":"…"})
+          // 3) meta.defaultStyleText
+          // 4) meta.sampleText (общий)
+          // 5) inst.name (как было)
+          let t =
+            inst?.text ??
+            inst?.sampleText ??
+            (meta?.instanceTexts && inst?.name ? meta.instanceTexts[inst.name] : undefined) ??
+            meta?.defaultStyleText ??
+            meta?.sampleText ??
+            inst?.name ??
+            "";
+          t = String(t);
+          // Однострочный рендер в styles: убираем переводы строк/дубли пробелов
+          return t.replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+        }
+
       async function initNode(node, type) {
         const fontUrl = node.getAttribute("data-font");
         if (!fontUrl) { showError(node, "Missing data-font attribute"); return; }
@@ -363,32 +383,71 @@
               break;
             }
 
-            case "styles": {
-              const instances = Array.isArray(meta.instances) ? meta.instances : [];
-              if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
+              case "styles": {
+                const instances = Array.isArray(meta.instances) ? meta.instances : [];
+                if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
 
-              for (const inst of instances) {
-                const wrapper = document.createElement("div"); wrapper.className = "fsx-style-item";
-                const label = document.createElement("div"); label.className = "fsx-style-name"; label.textContent = inst.name;
-                const mount = document.createElement("div");
-                wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper);
+                for (const inst of instances) {
+                  const wrapper = document.createElement("div"); wrapper.className = "fsx-style-item";
+                  const label = document.createElement("div"); label.className = "fsx-style-name";
 
-                const styleOptions = buildOptions(meta, {
-                  multiline: false,
-                  initialText: inst.name,
-                  sizePx: 240,
-                  readonly: false,
-                  showSize: true,
-                  includeFeatures: false,
-                  includeAxes: false
-                });
-                // никакого принудительного inline-стиля — полагаемся на CSS
-                const fs = new Fontsampler(mount, buildFonts(meta, inst), styleOptions);
-                FontsamplerSkin(fs);
-                fs.init();
+                  // Заголовок карточки (можно сделать ссылкой, если inst.url есть)
+                  label.textContent = inst.name;
+                  wrapper.appendChild(label);
+
+                  const mount = document.createElement("div");
+                  wrapper.appendChild(mount);
+                  node.appendChild(wrapper);
+
+                  // ❗ Берём initialText из JSON инстанса, с запасными вариантами
+                  const perInstanceText = getInstanceInitialText(inst, meta);
+
+                  const styleOptions = buildOptions(meta, {
+                    multiline: false,
+                    initialText: perInstanceText,  // ← вот здесь ключевое
+                    sizePx: 200,
+                    readonly: false,
+                    showSize: true,
+                    includeFeatures: false,
+                    includeAxes: false
+                  });
+
+                  // Однострочный показ с обрезкой вы уже включили в CSS (white-space:nowrap + ellipsis)
+
+                  const fs = new Fontsampler(mount, buildFonts(meta, inst), styleOptions);
+                  FontsamplerSkin(fs);
+                  fs.init();
+                }
+                break;
               }
-              break;
-            }
+
+
+            // case "styles": {
+            //   const instances = Array.isArray(meta.instances) ? meta.instances : [];
+            //   if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
+
+            //   for (const inst of instances) {
+            //     const wrapper = document.createElement("div"); wrapper.className = "fsx-style-item";
+            //     const label = document.createElement("div"); label.className = "fsx-style-name"; label.textContent = inst.name;
+            //     const mount = document.createElement("div");
+            //     wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper);
+
+            //     const styleOptions = buildOptions(meta, {
+            //       multiline: false,
+            //       initialText: inst.name,
+            //       sizePx: 240,
+            //       readonly: false,
+            //       showSize: true,
+            //       includeFeatures: false,
+            //       includeAxes: false
+            //     });
+            //     // никакого принудительного inline-стиля — полагаемся на CSS
+            //     const fs = new Fontsampler(mount, buildFonts(meta, inst), styleOptions);
+            //     FontsamplerSkin(fs);
+            //     fs.init();
+            //   }
+            //   break;
+            // }
           }
         } catch (err) {
           showError(node, `Fontsampler initialization failed: ${err.message}`);
