@@ -286,17 +286,16 @@
                 showSize: false          // слайдера нет
               });
 
-
-              // Явно задаём порядок
-              const axisTags = (meta.axes || []).map(a => a.tag);
-              mainOptions.order = [
-                axisTags,     // ряд с осями (если есть)
-                "opentype",   // ряд с фичами
-                "tester"      // поле ввода
-              ];
+              // // Явно задаём порядок
+              // const axisTags = (meta.axes || []).map(a => a.tag);
+              // mainOptions.order = [
+              //   axisTags,     // ряд с осями (если есть)
+              //   "opentype",   // ряд с фичами
+              //   "tester"      // поле ввода
+              // ];
 
               // добавляем начальный размер через конфиг, не включая контрол
-              mainOptions.config.fontsize = { unit: "px", init: 200, min: 80, max: 512, step: 1 };
+              mainOptions.config.fontsize = { unit: "px", init: 180, min: 80, max: 512, step: 1 };
 
               const fs = new Fontsampler(node, buildFonts(meta), mainOptions);
               FontsamplerSkin(fs);
