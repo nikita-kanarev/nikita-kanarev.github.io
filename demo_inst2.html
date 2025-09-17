@@ -11,7 +11,6 @@
   <link rel="stylesheet" href="https://nikita-kanarev.github.io/fontsampler-skin.css" />
 
 <style>
-  body { font-family: monospace; margin: 20px; line-height: 1.4; }
 
   .fsx-section { margin-bottom: 40px; max-width: 1200px; }
   .fsx-title { margin: 20px 0 10px 0; font-size: 14px; font-weight: bold; }
@@ -44,6 +43,9 @@
   /* Name Sampler: убираем контролы и фиксируем размер (один источник — CSS) */
   [id^="name_"] .fsjs-control-group { display: none !important; }
   [id^="name_"] .fsjs-tester { font-size: 200px; line-height: 1; }
+
+  [id^="main_sampler_"] { cursor: pointer; }
+  [id^="main_sampler_"] .fsjs-tester { cursor: inherit; } /* на всякий случай перебиваем */
 
   /* Убираем контролы у карточек Named Instances под основным сэмплером */
   .fsx-instances .fsjs-control-fontsize,
