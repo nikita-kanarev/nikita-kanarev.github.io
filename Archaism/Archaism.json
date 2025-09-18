@@ -1,0 +1,26 @@
+  {
+    "name": "Archaism",
+    "files": "https://nikita-kanarev.github.io/Archaism/Archaism.woff2",
+    "axes": [
+      { "tag": "wdth", "min": 0,  "max": 100,  "default": 50, "step": 1,  "label": "Width" },
+      { "tag": "cntr", "min": 0,   "max": 2,  "default": 1,  "step": 1,  "label": "Contrast" }
+    ],
+    "features": ["liga", "locl", "ordn"],
+    "instances": [
+      { "name": "Ct0Wd0",    "file": "Archaism-Ct0Wd0.woff2", "text": "Contrast" },
+      { "name": "Ct0Wd25",    "file": "Archaism-Ct0Wd25.woff2", "text": "Assommerais"  },
+      { "name": "Ct0Wd50",    "file": "Archaism-Ct0Wd50.woff2", "text": "Corroborant"  },
+      { "name": "Ct0Wd75",    "file": "Archaism-Ct0Wd75.woff2", "text": "Contrast"  },
+      { "name": "Ct0Wd100",    "file": "Archaism-Ct0Wd100.woff2", "text": "Einscharrens"  },
+      { "name": "Ct1Wd0",    "file": "Archaism-Ct1Wd0.woff2", "text": "Contrast"  },
+      { "name": "Ct1Wd25",    "file": "Archaism-Ct1Wd25.woff2", "text": "Mittelbruch"  },
+      { "name": "Ct1Wd50",    "file": "Archaism-Ct1Wd50.woff2", "text": "Contrast"  },
+      { "name": "Ct1Wd75",    "file": "Archaism-Ct1Wd75.woff2", "text": "Interspersion"  },
+      { "name": "Ct1Wd100",    "file": "Archaism-Ct1Wd100.woff2", "text": "Contrast"  },
+      { "name": "Ct2Wd0",    "file": "Archaism-Ct2Wd0.woff2", "text": "Contrast"  },
+      { "name": "Ct2Wd25",    "file": "Archaism-Ct2Wd25.woff2", "text": "Contrast"  },
+      { "name": "Ct2Wd50",    "file": "Archaism-Ct2Wd50.woff2", "text": "Gelblicheres"  },
+      { "name": "Ct2Wd75",    "file": "Archaism-Ct2Wd75.woff2", "text": "Contrast"  },
+      { "name": "Ct2Wd100",    "file": "Archaism-Ct2Wd100.woff2", "text": "Contrast"  }
+    ]
+  }
