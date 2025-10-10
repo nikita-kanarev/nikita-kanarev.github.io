@@ -56,7 +56,8 @@
     line-height: 1.5; 
     padding-bottom: 6px; 
     vertical-align: baseline;
-    overflow: visible;  }
+    overflow: visible;  
+    transition: all 0.2s ease-out; }
   .fsjs-skin .fsjs-button, .fsjs-skin .fsjs-block-type-buttongroup button {
     background: #FDFDFD;
     border: 1px solid #b3b3b3;

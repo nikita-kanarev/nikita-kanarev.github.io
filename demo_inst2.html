@@ -75,7 +75,7 @@
     <h2>Main Sampler</h2>
     <div id="main_sampler_archaism" data-font="https://nikita-kanarev.github.io/Archaism.woff2" 
     data-link="https://example.com/specimen/archaism"
-    data-link-target="_blank">></div>
+    data-link-target="_blank"></div>
 
     <hr>
 
@@ -422,32 +422,6 @@
               }
 
 
-            // case "styles": {
-            //   const instances = Array.isArray(meta.instances) ? meta.instances : [];
-            //   if (!instances.length) { showError(node, "No named instances defined in metadata"); return; }
-
-            //   for (const inst of instances) {
-            //     const wrapper = document.createElement("div"); wrapper.className = "fsx-style-item";
-            //     const label = document.createElement("div"); label.className = "fsx-style-name"; label.textContent = inst.name;
-            //     const mount = document.createElement("div");
-            //     wrapper.appendChild(label); wrapper.appendChild(mount); node.appendChild(wrapper);
-
-            //     const styleOptions = buildOptions(meta, {
-            //       multiline: false,
-            //       initialText: inst.name,
-            //       sizePx: 240,
-            //       readonly: false,
-            //       showSize: true,
-            //       includeFeatures: false,
-            //       includeAxes: false
-            //     });
-            //     // никакого принудительного inline-стиля — полагаемся на CSS
-            //     const fs = new Fontsampler(mount, buildFonts(meta, inst), styleOptions);
-            //     FontsamplerSkin(fs);
-            //     fs.init();
-            //   }
-            //   break;
-            // }
           }
         } catch (err) {
           showError(node, `Fontsampler initialization failed: ${err.message}`);
