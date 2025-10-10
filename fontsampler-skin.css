@@ -33,29 +33,11 @@
     margin-bottom: 0; }
   .fsjs-skin .fsjs-label {
     line-height: 1.5em; }
-
   .fsjs-skin .fsjs-block-type-slider .fsjs-label,
   .fsjs-skin .fsjs-block-type-slidergroup .fsjs-label {
     display: flex;
-    align-items: center;
-    justify-content: space-between; /* <-- вот ключевая строчка */
-    gap: 10px;                      /* расстояние между элементами */
-    width: 100%;
-  }
-
-  .fsjs-skin .fsjs-block-type-slider .fsjs-label span:first-child,
-  .fsjs-skin .fsjs-block-type-slidergroup .fsjs-label span:first-child {
-    margin-right: auto;
-    font-weight: 500; /* для читаемости заголовка */
-  }
-
-  .fsjs-skin .fsjs-block-type-slider .fsjs-label .fsjs-label-value,
-  .fsjs-skin .fsjs-block-type-slidergroup .fsjs-label .fsjs-label-value {
-    min-width: 40px;      /* чтобы значение не прыгало */
-    text-align: right;    /* выравнивание по правому краю */
-    font-variant-numeric: tabular-nums; /* красивые цифры */
-  }
-
+    justify-content: flex-end;
+    width: 100%; }
     .fsjs-skin .fsjs-block-type-slider .fsjs-label span:first-child,
     .fsjs-skin .fsjs-block-type-slidergroup .fsjs-label span:first-child {
       margin-right: auto; }
@@ -348,53 +330,5 @@
   @supports (font-variation-settings: normal) {
     .fsjs-skin [data-fsjs-block=variation] {
       display: block; } }
-
-/* ОДНА СТРОКА: [Лейбл] —— [Слайдер] —— [Значение] */
-.fsjs-skin .fsjs-block-type-slider {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  /* резервируем места под левый лейбл и правое значение */
-  padding-left: 96px;   /* ширина колонки заголовка */
-  padding-right: 96px;  /* ширина колонки значения */
-}
-
-/* левый заголовок ("Size") */
-.fsjs-skin .fsjs-block-type-slider .fsjs-label span:first-child {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-/* слайдер по центру, на всю доступную ширину */
-.fsjs-skin .fsjs-block-type-slider [type='range'] {
-  flex: 1 1 auto;
-  margin: 0;
-}
-
-/* правый блок значения: показываем аккуратно в одну строку */
-.fsjs-skin .fsjs-block-type-slider .fsjs-label .fsjs-label-value,
-.fsjs-skin .fsjs-block-type-slider .fsjs-label .fsjs-label-unit {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
-}
-
-/* чтобы ед. измерения не падали на новую строку */
-.fsjs-skin .fsjs-block-type-slider .fsjs-label .fsjs-label-unit:before {
-  content: " "; /* неразрывный пробел */
-}
-
-/* (опционально) если у "Size" единицы всегда px — делаем компактнее: */
-.fsjs-skin .fsjs-block-type-slider[data-property="size"] .fsjs-label .fsjs-label-unit { display: none; }
-.fsjs-skin .fsjs-block-type-slider[data-property="size"] .fsjs-label .fsjs-label-value::after { content: " px"; }
-
 
 /*# sourceMappingURL=fontsampler-skin.css.map */
