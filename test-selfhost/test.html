@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UnicornStudio — self-hosted</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;}
+  .us-stage{width:1440px;height:900px;}
+</style>
+</head>
+<body>
+
+<div class="us-stage" data-us-project-src="./project.json"></div>
+
+<script src="./unicornStudio.umd.js"></script>
+<script>
+  if (window.UnicornStudio && window.UnicornStudio.init) {
+    UnicornStudio.init();
+  }
+</script>
+
+</body>
+</html>
