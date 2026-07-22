@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<!--
+  JSON CONFIG EDITOR — local tool, NOT a Webflow embed.
+  ======================================================
+  Form-based editor over the TEXT fields of a <slug>.json config (the file
+  build-config.py generates and you upload to GitHub Pages). Structural data
+  that comes straight from the font file — axes (tag/min/max/default),
+  instances, instanceAxes, weightRange, format, fontUrl, glyphGroups,
+  alternates — is left untouched (round-trips through unchanged); regenerate
+  those with build-config.py, don't hand-edit them here.
+
+  What you CAN edit here: family/default word, axis LABELS, feature toggle
+  labels, cuts phrases + long text sample, license pricing, OpenType feature
+  names + samples (with a live preview in the real font), Index display
+  strings. Empty field = "no override", exactly like leaving the key out of
+  the JSON — the tool won't inject defaults you didn't touch.
+
+  Usage: "Open JSON…" (Chrome/Edge) uses the File System Access API — it keeps
+  a handle to the picked file, so "Save" writes straight back to that same
+  file on disk (no re-download, no re-upload dance). Firefox/Safari, or files
+  loaded via drag-in/paste, don't get a handle — use "Save as…" (downloads a
+  new file) or "Copy to clipboard" instead; "Save" stays disabled until a
+  real file handle exists.
+
+  This file is a static page — you can host it on GitHub Pages (e.g. as
+  another file in nikita-kanarev.github.io) exactly like the woff2/json
+  assets it edits. The "GitHub…" panel talks DIRECTLY to the repo via the
+  GitHub Contents API (no backend): "Load from GitHub" fetches a <slug>.json
+  by owner/repo/branch/path, "Commit to GitHub" writes it back as a new
+  commit. Needs a Personal Access Token with Contents read/write on that repo
+  (fine-grained PAT scoped to just this repo is safest) — pasted once, kept
+  only in this browser's localStorage, sent only to api.github.com.
+
+  Run locally: python3 -m http.server 8755, then open
+  http://127.0.0.1:8755/store/json-editor.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Font config editor</title>
+<style>
+  :root{ --ink:#141210; --paper:#f1ece0; --rust:#c2542a; --soft:#645d54; --edge:rgba(20,18,16,.16); }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:ui-sans-serif,system-ui,Arial,sans-serif;}
+  .top{position:sticky;top:0;z-index:10;background:var(--paper);border-bottom:1px solid var(--edge);padding:14px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .top h1{font-size:14px;letter-spacing:.08em;text-transform:uppercase;margin:0 12px 0 0;}
+  button,input[type=file]::file-selector-button{font:inherit;font-size:12px;letter-spacing:.04em;padding:8px 14px;border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:6px;cursor:pointer;}
+  button:hover{background:var(--ink);color:var(--paper);}
+  button.primary{background:var(--ink);color:var(--paper);}
+  button.primary:hover{background:var(--rust);border-color:var(--rust);}
+  button:disabled{opacity:.35;cursor:not-allowed;background:transparent;color:var(--ink);}
+  .status{font-size:12px;color:var(--soft);margin-left:auto;}
+  .status.err{color:#b00;}
+  main{max-width:920px;margin:0 auto;padding:24px;display:none;}
+  main.ready{display:block;}
+  .empty-state{max-width:640px;margin:60px auto;padding:0 24px;text-align:center;color:var(--soft);}
+  .empty-state textarea{width:100%;height:160px;font:12px/1.5 ui-monospace,Menlo,monospace;padding:10px;border:1px solid var(--edge);border-radius:6px;background:#fff;}
+  section{margin-bottom:36px;}
+  section h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);border-bottom:1px solid var(--edge);padding-bottom:8px;margin:0 0 16px;}
+  .row{display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:start;margin-bottom:12px;}
+  .row label{font-size:12px;color:var(--soft);padding-top:9px;}
+  .row .hint{font-size:11px;color:var(--soft);opacity:.8;margin-top:4px;}
+  input[type=text],input[type=number],textarea{width:100%;font:13px/1.4 ui-monospace,Menlo,monospace;padding:8px 10px;border:1px solid var(--edge);border-radius:6px;background:#fff;color:var(--ink);}
+  input:focus,textarea:focus{outline:2px solid var(--rust);outline-offset:-1px;}
+  textarea{resize:vertical;min-height:44px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .axis-ctx{font-size:11px;color:var(--soft);white-space:nowrap;padding-top:9px;}
+  .feat{border:1px solid var(--edge);border-radius:8px;padding:14px;margin-bottom:12px;background:rgba(255,255,255,.5);}
+  .feat .tag{font:11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--rust);margin-bottom:8px;}
+  .preview{margin-top:10px;padding:12px;border:1px dashed var(--edge);border-radius:6px;font-size:22px;line-height:1.3;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;}
+  .preview .hl{color:var(--rust);}
+  .preview .arr{color:var(--rust);}
+  .markup-hint{font-size:11px;color:var(--soft);margin-top:4px;}
+  .markup-hint code{background:rgba(20,18,16,.06);padding:1px 4px;border-radius:3px;}
+  .phrase-row{display:grid;grid-template-columns:180px 1fr;gap:10px;align-items:start;margin-bottom:8px;}
+  .phrase-row .gname{font-size:12px;padding-top:9px;color:var(--ink);}
+  .gh-panel{background:rgba(255,255,255,.6);border-bottom:1px solid var(--edge);padding:16px 24px;}
+  .gh-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;max-width:760px;}
+  .gh-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  details{margin-bottom:36px;}
+  details summary{cursor:pointer;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);border-bottom:1px solid var(--edge);padding-bottom:8px;}
+  details[open] summary{margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Font config editor</h1>
+  <button id="btn-open">Open JSON…</button>
+  <input id="file-input" type="file" accept="application/json" hidden>
+  <button id="btn-save" class="primary" disabled>Save</button>
+  <button id="btn-download" disabled>Save as…</button>
+  <button id="btn-copy" disabled>Copy to clipboard</button>
+  <button id="btn-gh-toggle">GitHub…</button>
+  <span class="status" id="status"></span>
+</div>
+
+<div class="gh-panel" id="gh-panel" hidden>
+  <div class="gh-row">
+    <div><label class="hint">Owner</label><input type="text" id="gh-owner" placeholder="nikita-kanarev"></div>
+    <div><label class="hint">Repo</label><input type="text" id="gh-repo" placeholder="nikita-kanarev.github.io"></div>
+    <div><label class="hint">Branch</label><input type="text" id="gh-branch" placeholder="main"></div>
+  </div>
+  <div class="gh-row">
+    <div style="grid-column:1/3"><label class="hint">Path (e.g. archaism.json)</label><input type="text" id="gh-path" placeholder="archaism.json"></div>
+    <div><label class="hint">Personal Access Token</label><input type="password" id="gh-token" placeholder="ghp_…"></div>
+  </div>
+  <div class="gh-actions">
+    <button id="btn-gh-load">Load from GitHub</button>
+    <button id="btn-gh-commit" class="primary">Commit to GitHub</button>
+    <button id="btn-gh-forget">Forget token</button>
+    <span class="status" id="gh-status"></span>
+  </div>
+  <div class="hint" style="margin-top:8px;max-width:640px;">
+    Token needs Contents read/write on this repo (fine-grained PAT scoped to it, or a
+    classic PAT with <code>repo</code> scope). It's saved only in THIS browser's
+    localStorage and is sent only to api.github.com — never embedded in this page,
+    never sent anywhere else. Use a token scoped to this one repo if you can.
+  </div>
+</div>
+
+<div class="empty-state" id="empty-state">
+  <p>Load a <code>&lt;slug&gt;.json</code> to start editing — choose a file, paste its contents, or load it straight from GitHub (button above).</p>
+  <textarea id="paste-area" placeholder="Paste JSON here…"></textarea>
+  <p><button id="btn-parse-paste">Load pasted JSON</button></p>
+</div>
+
+<main id="main">
+  <section id="sec-basics">
+    <h2>Basics</h2>
+    <div class="row"><label>Family name</label><div><input type="text" id="f-family"><div class="hint">Shown as the typeface name across every section.</div></div></div>
+    <div class="row"><label>Default word (text)</label><div><input type="text" id="f-text"><div class="hint">Playground's starting phrase. Empty → falls back to the family name.</div></div></div>
+  </section>
+
+  <section id="sec-axes">
+    <h2>Axis labels</h2>
+    <div id="axes-list"></div>
+  </section>
+
+  <section id="sec-features">
+    <h2>Feature toggle labels <span class="hint">(Playground / Cuts feature pills)</span></h2>
+    <div id="features-list"></div>
+  </section>
+
+  <section id="sec-cuts">
+    <h2>Cuts</h2>
+    <div class="row"><label>Long text sample</label><div><textarea id="f-cuts-textsample" rows="3"></textarea><div class="hint">Used when a Cuts row is switched to Text mode. Empty → built-in default paragraph.</div></div></div>
+    <div class="row"><label>Cut-group phrases</label><div id="phrases-list"><div class="hint">Load a config with instances to see groups here.</div></div></div>
+  </section>
+
+  <section id="sec-license">
+    <h2>License pricing</h2>
+    <div class="grid3">
+      <div><label class="hint">Currency</label><input type="text" id="f-lic-currency" placeholder="$"></div>
+      <div><label class="hint">Single-cut base price</label><input type="number" id="f-lic-single" placeholder="50"></div>
+      <div><label class="hint">Full-family price</label><input type="number" id="f-lic-full" placeholder="(volume curve)"></div>
+    </div>
+    <div class="row" style="margin-top:10px"><label>Volume exponent</label><div><input type="number" step="0.01" id="f-lic-exp" placeholder="0.75"><div class="hint">0–1. Lower = steeper bulk discount for multiple cuts.</div></div></div>
+    <div class="row"><label>Price specimen variation</label><div id="lic-pricevar-list"><div class="hint">Which instance the big ticket price number is set in (per axis).</div></div></div>
+  </section>
+
+  <section id="sec-opentype">
+    <h2>OpenType showcase</h2>
+    <div class="grid3">
+      <div><label class="hint">Columns (desktop)</label><input type="number" id="f-ot-cols" placeholder="3"></div>
+      <div><label class="hint">Columns (mobile)</label><input type="number" id="f-ot-colsmob" placeholder="1"></div>
+      <div><label class="hint">Sample size (px or CSS)</label><input type="text" id="f-ot-samplesize" placeholder="clamp(32px,3.6vw,56px)"></div>
+    </div>
+    <div id="ot-features-list" style="margin-top:18px"></div>
+  </section>
+
+  <details id="sec-index">
+    <summary>Index (home row) display</summary>
+    <div class="row"><label>Separator between cuts</label><div><input type="text" id="f-idx-sep" placeholder="em-space"></div></div>
+    <div class="row"><label>Cuts per row (force wrap)</label><div><input type="number" id="f-idx-perrow" placeholder="(none — wrap by width)"></div></div>
+    <div class="row"><label>Name hover accent color</label><div><input type="text" id="f-idx-hovercolor" placeholder="(CMS Border Color / --fx-action)"></div></div>
+    <div class="grid2">
+      <div><label class="hint">Hover → vertical axis</label><select id="f-idx-hovery"></select></div>
+      <div><label class="hint">Hover → horizontal axis</label><select id="f-idx-hoverx"></select></div>
+    </div>
+    <div class="row" style="margin-top:10px"><label>Name size</label><div><input type="text" id="f-idx-namesize" placeholder="clamp(56px,11vw,180px)"></div></div>
+    <div class="row"><label>Cuts row size</label><div><input type="text" id="f-idx-cutssize" placeholder="clamp(14px,1.6vw,22px)"></div></div>
+  </details>
+</main>
+
+<script>
+(function(){
+  var cfg = null;
+  var $ = function(id){ return document.getElementById(id); };
+
+  function setStatus(msg, isErr){ var s=$("status"); s.textContent=msg||""; s.classList.toggle("err",!!isErr); }
+
+  // ── GitHub Contents API — load/commit a <slug>.json straight from the repo.
+  //    Owner/repo/branch/token persist in localStorage (per-browser only); the
+  //    path does not, since it's a different file every time.
+  var GH_LS = "fx-json-editor-gh";
+  var ghSha = null;   // sha of the last file loaded/committed, needed to update in place
+  function ghField(id){ return $(id).value.trim(); }
+  function ghConfig(){
+    return { owner:ghField("gh-owner"), repo:ghField("gh-repo"), branch:ghField("gh-branch"),
+             path:ghField("gh-path"), token:ghField("gh-token") };
+  }
+  function ghPersist(){
+    var c=ghConfig();
+    localStorage.setItem(GH_LS, JSON.stringify({owner:c.owner, repo:c.repo, branch:c.branch, token:c.token}));
+  }
+  function ghRestore(){
+    try{
+      var saved = JSON.parse(localStorage.getItem(GH_LS)||"{}");
+      if(saved.owner) $("gh-owner").value=saved.owner;
+      if(saved.repo) $("gh-repo").value=saved.repo;
+      if(saved.branch) $("gh-branch").value=saved.branch;
+      if(saved.token) $("gh-token").value=saved.token;
+    }catch(e){}
+  }
+  function setGhStatus(msg, isErr){ var s=$("gh-status"); s.textContent=msg||""; s.classList.toggle("err",!!isErr); }
+
+  function bytesToBase64(bytes){
+    var bin="", chunk=0x8000;
+    for(var i=0;i<bytes.length;i+=chunk) bin += String.fromCharCode.apply(null, bytes.subarray(i,i+chunk));
+    return btoa(bin);
+  }
+  function base64ToBytes(b64){
+    var bin=atob(b64.replace(/\n/g,"")), bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return bytes;
+  }
+  function utf8ToB64(str){ return bytesToBase64(new TextEncoder().encode(str)); }
+  function b64ToUtf8(b64){ return new TextDecoder().decode(base64ToBytes(b64)); }
+
+  async function ghLoad(){
+    var c=ghConfig(); ghPersist();
+    if(!c.owner||!c.repo||!c.path){ setGhStatus("Fill owner, repo, and path.", true); return; }
+    setGhStatus("Loading…");
+    try{
+      var url="https://api.github.com/repos/"+c.owner+"/"+c.repo+"/contents/"+encodeURIComponent(c.path)+(c.branch?"?ref="+encodeURIComponent(c.branch):"");
+      var headers={Accept:"application/vnd.github+json"};
+      if(c.token) headers.Authorization="token "+c.token;
+      var res=await fetch(url,{headers:headers});
+      var json=await res.json();
+      if(!res.ok) throw new Error(json.message||(res.status+" "+res.statusText));
+      ghSha=json.sha;
+      load(b64ToUtf8(json.content));
+      setGhStatus("Loaded "+c.path+" from "+c.owner+"/"+c.repo+" (sha "+ghSha.slice(0,7)+")");
+      setStatus((cfg.family||"config")+" loaded from GitHub — Commit to GitHub saves it back");
+    }catch(e){ setGhStatus("Load failed: "+e.message, true); }
+  }
+
+  async function ghCommit(){
+    var c=ghConfig(); ghPersist();
+    if(!cfg){ setGhStatus("Load a config first.", true); return; }
+    if(!c.token){ setGhStatus("Paste a Personal Access Token first.", true); return; }
+    if(!c.owner||!c.repo||!c.path){ setGhStatus("Fill owner, repo, and path.", true); return; }
+    setGhStatus("Committing…");
+    try{
+      var url="https://api.github.com/repos/"+c.owner+"/"+c.repo+"/contents/"+encodeURIComponent(c.path);
+      var body={ message:"Update "+c.path+" via json-editor", content:utf8ToB64(JSON.stringify(cfg,null,2)) };
+      if(c.branch) body.branch=c.branch;
+      if(ghSha) body.sha=ghSha;
+      var res=await fetch(url,{method:"PUT",headers:{Authorization:"token "+c.token,Accept:"application/vnd.github+json","Content-Type":"application/json"},body:JSON.stringify(body)});
+      var json=await res.json();
+      if(!res.ok) throw new Error(json.message||(res.status+" "+res.statusText));
+      ghSha=json.content.sha;
+      setGhStatus("Committed "+c.path+" — "+json.commit.sha.slice(0,7)+" at "+new Date().toLocaleTimeString());
+    }catch(e){ setGhStatus("Commit failed: "+e.message, true); }
+  }
+
+  function expand(){
+    return (cfg.instances||[]).map(function(row){
+      var o={name:row[0]}; (cfg.instanceAxes||[]).forEach(function(t,i){o[t]=row[i+1];}); return o;
+    });
+  }
+  // same grouping algorithm as embed-cuts.fetch.html / embed-index.fetch.html
+  function buildGroups(){
+    var instances = expand();
+    var vAxis = (cfg.cuts||{}).variantAxis;
+    var hasV = vAxis && (cfg.instanceAxes||[]).indexOf(vAxis)>=0 && instances.some(function(x){return x[vAxis]!==undefined;});
+    if(!hasV) return instances.map(function(i){return {name:i.name};});
+    var order=[], map={};
+    var other=(cfg.instanceAxes||[]).filter(function(t){return t!==vAxis;});
+    instances.forEach(function(inst){
+      var k=other.map(function(t){return t+":"+inst[t];}).join("|");
+      if(!map[k]){map[k]=[];order.push(k);} map[k].push(inst);
+    });
+    return order.map(function(k){
+      var list=map[k];
+      var wl=list.map(function(x){return x.name.split(/\s+/);});
+      var common=wl[0].filter(function(w){return wl.every(function(ws){return ws.indexOf(w)>=0;});});
+      var name = list.length<2 ? list[0].name : wl[0].filter(function(w){return common.indexOf(w)>=0;}).join(" ");
+      return {name:name};
+    });
+  }
+
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  // {{highlighted}} markup <-> the config's [string|{hl}] segment array
+  function markupFromSample(sample){
+    if(!sample || !sample.length) return "";
+    return sample.map(function(s){ return typeof s==="string" ? s : "{{"+s.hl+"}}"; }).join("");
+  }
+  function sampleFromMarkup(markup){
+    var out=[], re=/\{\{([\s\S]*?)\}\}/g, last=0, m;
+    while((m=re.exec(markup))){
+      if(m.index>last) out.push(markup.slice(last,m.index));
+      out.push({hl:m[1]}); last=re.lastIndex;
+    }
+    if(last<markup.length) out.push(markup.slice(last));
+    if(!out.length) return [];
+    return out;
+  }
+  function fullText(sample){ return sample.map(function(s){return typeof s==="string"?s:s.hl;}).join(""); }
+  function hlHtml(sample){ return sample.map(function(s){return typeof s==="string"?esc(s):'<span class="hl">'+esc(s.hl)+'</span>';}).join(""); }
+
+  function fontFaceFromCfg(){
+    if(!cfg.fontUrl || !cfg.family) return;
+    var id="fx-face-"+cfg.family.replace(/[^a-z0-9]+/gi,"-").toLowerCase();
+    if(document.getElementById(id)) return;
+    var w=cfg.weightRange||[100,900], fmt=cfg.format||"woff2-variations", fb=fmt.split("-")[0];
+    var st=document.createElement("style"); st.id=id;
+    st.textContent="@font-face{font-family:'"+cfg.family+"';src:url('"+cfg.fontUrl+"') format('"+fmt+"'),url('"+cfg.fontUrl+"') format('"+fb+"');font-weight:"+w[0]+" "+w[1]+";font-display:swap;}";
+    document.head.appendChild(st);
+    return "'"+cfg.family+"'";
+  }
+
+  function bindText(id, get, set){
+    var el=$(id); el.value = get()||"";
+    el.addEventListener("input", function(){
+      var v=el.value;
+      if(v==="") set(undefined); else set(v);
+    });
+  }
+  function bindNum(id, get, set){
+    var el=$(id); var v=get(); el.value = (v==null?"":v);
+    el.addEventListener("input", function(){
+      if(el.value==="") { set(undefined); return; }
+      var n=parseFloat(el.value); set(isNaN(n)?undefined:n);
+    });
+  }
+  function ensure(obj, key){ if(!obj[key]) obj[key]={}; return obj[key]; }
+  function prune(obj, key){ if(obj[key] && Object.keys(obj[key]).length===0) delete obj[key]; }
+
+  function renderBasics(){
+    bindText("f-family", function(){return cfg.family;}, function(v){ if(v===undefined) return; cfg.family=v; });
+    bindText("f-text", function(){return cfg.text;}, function(v){ v===undefined?delete cfg.text:cfg.text=v; });
+  }
+
+  function renderAxes(){
+    var wrap=$("axes-list"); wrap.innerHTML="";
+    (cfg.axes||[]).forEach(function(a){
+      var row=document.createElement("div"); row.className="row";
+      row.innerHTML='<label>'+esc(a.tag)+'</label><div></div>';
+      var cell=row.querySelector("div:last-child");
+      var ctx=document.createElement("div"); ctx.className="axis-ctx";
+      ctx.textContent="min "+a.min+" · default "+a.default+" · max "+a.max;
+      var input=document.createElement("input"); input.type="text"; input.value=a.label||"";
+      input.placeholder=a.tag;
+      input.addEventListener("input", function(){ a.label = input.value || undefined; if(a.label===undefined) delete a.label; });
+      cell.appendChild(input); cell.appendChild(ctx);
+      wrap.appendChild(row);
+    });
+  }
+
+  function renderFeatures(){
+    var wrap=$("features-list"); wrap.innerHTML="";
+    (cfg.features||[]).forEach(function(f){
+      var row=document.createElement("div"); row.className="row";
+      row.innerHTML='<label style="font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;">'+esc(f.tag)+'</label><div></div>';
+      var cell=row.querySelector("div:last-child");
+      var input=document.createElement("input"); input.type="text"; input.value=f.label||"";
+      input.placeholder=f.tag;
+      input.addEventListener("input", function(){ f.label = input.value || undefined; if(f.label===undefined) delete f.label; });
+      cell.appendChild(input);
+      wrap.appendChild(row);
+    });
+    if(!(cfg.features||[]).length) wrap.innerHTML='<div class="hint">No cfg.features in this config.</div>';
+  }
+
+  function renderCuts(){
+    bindText("f-cuts-textsample", function(){return (cfg.cuts||{}).textSample;}, function(v){
+      if(v===undefined){ if(cfg.cuts) delete cfg.cuts.textSample; return; }
+      ensure(cfg,"cuts").textSample=v;
+    });
+    var wrap=$("phrases-list"); wrap.innerHTML="";
+    if(!(cfg.instances||[]).length){ wrap.innerHTML='<div class="hint">No instances in this config.</div>'; return; }
+    var groups = buildGroups();
+    var phrases = (cfg.cuts||{}).phrases || {};
+    groups.forEach(function(g){
+      var row=document.createElement("div"); row.className="phrase-row";
+      var lab=document.createElement("div"); lab.className="gname"; lab.textContent=g.name;
+      var input=document.createElement("input"); input.type="text"; input.placeholder=g.name;
+      input.value=phrases[g.name]||"";
+      input.addEventListener("input", function(){
+        var p=ensure(cfg,"cuts"); p.phrases=p.phrases||{};
+        if(input.value==="") delete p.phrases[g.name]; else p.phrases[g.name]=input.value;
+        if(Object.keys(p.phrases).length===0) delete p.phrases;
+        prune(cfg,"cuts");
+      });
+      row.appendChild(lab); row.appendChild(input); wrap.appendChild(row);
+    });
+  }
+
+  function renderLicense(){
+    bindText("f-lic-currency", function(){return (cfg.license||{}).currency;}, function(v){ v===undefined? (cfg.license&&delete cfg.license.currency) : ensure(cfg,"license").currency=v; prune(cfg,"license"); });
+    bindNum("f-lic-single", function(){return (cfg.license||{}).singleBase;}, function(v){ v===undefined? (cfg.license&&delete cfg.license.singleBase) : ensure(cfg,"license").singleBase=v; prune(cfg,"license"); });
+    bindNum("f-lic-full", function(){return (cfg.license||{}).fullBase;}, function(v){ v===undefined? (cfg.license&&delete cfg.license.fullBase) : ensure(cfg,"license").fullBase=v; prune(cfg,"license"); });
+    bindNum("f-lic-exp", function(){return (cfg.license||{}).singleExponent;}, function(v){ v===undefined? (cfg.license&&delete cfg.license.singleExponent) : ensure(cfg,"license").singleExponent=v; prune(cfg,"license"); });
+
+    var wrap=$("lic-pricevar-list"); wrap.innerHTML="";
+    var pv=(cfg.license||{}).priceVariation||{};
+    (cfg.axes||[]).forEach(function(a){
+      var row=document.createElement("div"); row.className="row";
+      row.innerHTML='<label>'+esc(a.tag)+'</label><div></div>';
+      var cell=row.querySelector("div:last-child");
+      var input=document.createElement("input"); input.type="number"; input.placeholder=a.default;
+      input.value = pv[a.tag]!=null ? pv[a.tag] : "";
+      input.addEventListener("input", function(){
+        var l=ensure(cfg,"license"); l.priceVariation=l.priceVariation||{};
+        if(input.value===""){ delete l.priceVariation[a.tag]; } else { l.priceVariation[a.tag]=parseFloat(input.value); }
+        if(Object.keys(l.priceVariation).length===0) delete l.priceVariation;
+        prune(cfg,"license");
+      });
+      cell.appendChild(input); wrap.appendChild(row);
+    });
+  }
+
+  function renderOpentype(){
+    bindNum("f-ot-cols", function(){return (cfg.opentype||{}).cols;}, function(v){ v===undefined?(cfg.opentype&&delete cfg.opentype.cols):ensure(cfg,"opentype").cols=v; prune(cfg,"opentype"); });
+    bindNum("f-ot-colsmob", function(){return (cfg.opentype||{}).colsMob;}, function(v){ v===undefined?(cfg.opentype&&delete cfg.opentype.colsMob):ensure(cfg,"opentype").colsMob=v; prune(cfg,"opentype"); });
+    bindText("f-ot-samplesize", function(){return (cfg.opentype||{}).sampleSize;}, function(v){ v===undefined?(cfg.opentype&&delete cfg.opentype.sampleSize):ensure(cfg,"opentype").sampleSize=v; prune(cfg,"opentype"); });
+
+    var wrap=$("ot-features-list"); wrap.innerHTML="";
+    var feats = (cfg.opentype||{}).features;
+    if(!feats || !feats.length){ wrap.innerHTML='<div class="hint">No opentype.features in this config — the showcase falls back to the plain feature list above with a generic sample.</div>'; return; }
+    var faceFamily = fontFaceFromCfg();
+
+    feats.forEach(function(f){
+      var box=document.createElement("div"); box.className="feat";
+      box.innerHTML =
+        '<div class="tag">'+esc(f.tag)+'</div>'+
+        '<div class="row" style="grid-template-columns:80px 1fr"><label>Name</label><input type="text" class="fname"></div>'+
+        '<div class="row" style="grid-template-columns:80px 1fr;margin-top:8px"><label>Sample</label><div><textarea class="fsample" rows="2"></textarea>'+
+        '<div class="markup-hint">Wrap the glyphs this feature changes in <code>{{…}}</code> — e.g. <code>ff {{fi fl}} fb</code>. No <code>{{}}</code> at all → the whole sample counts as changed.</div></div></div>'+
+        '<div class="preview"></div>';
+      var nameEl=box.querySelector(".fname"), sampleEl=box.querySelector(".fsample"), prevEl=box.querySelector(".preview");
+      nameEl.value=f.name||"";
+      sampleEl.value=markupFromSample(f.sample);
+
+      function updatePreview(){
+        var sample = f.sample && f.sample.length ? f.sample : [{hl:"AaBbGg 0123"}];
+        var style = faceFamily ? "font-family:"+faceFamily+";" : "";
+        prevEl.innerHTML =
+          '<span style="'+style+'">'+esc(fullText(sample))+'</span>'+
+          '<span class="arr">→</span>'+
+          '<span style="'+style+'">'+hlHtml(sample)+'</span>';
+      }
+      nameEl.addEventListener("input", function(){ f.name = nameEl.value || undefined; if(f.name===undefined) delete f.name; });
+      sampleEl.addEventListener("input", function(){
+        var markup=sampleEl.value;
+        f.sample = markup.trim() ? (markup.indexOf("{{")<0 ? [{hl:markup}] : sampleFromMarkup(markup)) : [];
+        updatePreview();
+      });
+      updatePreview();
+      wrap.appendChild(box);
+    });
+  }
+
+  function axisOptions(sel, current){
+    sel.innerHTML = '<option value="">(default)</option>' + (cfg.axes||[]).map(function(a){
+      return '<option value="'+esc(a.tag)+'"'+(a.tag===current?" selected":"")+'>'+esc(a.tag)+(a.label?" — "+esc(a.label):"")+'</option>';
+    }).join("");
+  }
+
+  function renderIndex(){
+    var idx = cfg.index || {};
+    bindText("f-idx-sep", function(){return idx.separator;}, function(v){ v===undefined?(cfg.index&&delete cfg.index.separator):ensure(cfg,"index").separator=v; prune(cfg,"index"); });
+    bindNum("f-idx-perrow", function(){return idx.cutsPerRow;}, function(v){ v===undefined?(cfg.index&&delete cfg.index.cutsPerRow):ensure(cfg,"index").cutsPerRow=v; prune(cfg,"index"); });
+    bindText("f-idx-hovercolor", function(){return idx.nameHover;}, function(v){ v===undefined?(cfg.index&&delete cfg.index.nameHover):ensure(cfg,"index").nameHover=v; prune(cfg,"index"); });
+    bindText("f-idx-namesize", function(){return idx.nameSize;}, function(v){ v===undefined?(cfg.index&&delete cfg.index.nameSize):ensure(cfg,"index").nameSize=v; prune(cfg,"index"); });
+    bindText("f-idx-cutssize", function(){return idx.cutsSize;}, function(v){ v===undefined?(cfg.index&&delete cfg.index.cutsSize):ensure(cfg,"index").cutsSize=v; prune(cfg,"index"); });
+
+    var hy=$("f-idx-hovery"), hx=$("f-idx-hoverx");
+    axisOptions(hy, (idx.hover||{}).y); axisOptions(hx, (idx.hover||{}).x);
+    function bindHover(sel, key){
+      sel.addEventListener("change", function(){
+        var i=ensure(cfg,"index"); i.hover=i.hover||{};
+        if(sel.value==="") delete i.hover[key]; else i.hover[key]=sel.value;
+        if(Object.keys(i.hover).length===0) delete i.hover;
+        prune(cfg,"index");
+      });
+    }
+    bindHover(hy,"y"); bindHover(hx,"x");
+  }
+
+  function renderAll(){
+    renderBasics(); renderAxes(); renderFeatures(); renderCuts();
+    renderLicense(); renderOpentype(); renderIndex();
+  }
+
+  var fileHandle = null;   // set only when opened via the File System Access picker
+  var hasFSA = "showOpenFilePicker" in window;
+
+  function load(json, handle){
+    try{ cfg = JSON.parse(json); }
+    catch(e){ setStatus("Invalid JSON: "+e.message, true); return; }
+    fileHandle = handle || null;
+    $("empty-state").style.display="none";
+    $("main").classList.add("ready");
+    $("btn-download").disabled=false; $("btn-copy").disabled=false;
+    $("btn-save").disabled = !fileHandle;
+    setStatus((cfg.family||"config")+" loaded"+(fileHandle?" — editing "+fileHandle.name:" (no file handle — use Save as… or Copy)"));
+    renderAll();
+  }
+
+  $("btn-open").addEventListener("click", async function(){
+    if(hasFSA){
+      try{
+        var [handle] = await window.showOpenFilePicker({types:[{description:"JSON",accept:{"application/json":[".json"]}}]});
+        var file = await handle.getFile();
+        load(await file.text(), handle);
+      }catch(e){ /* user cancelled the picker */ }
+      return;
+    }
+    $("file-input").click();
+  });
+  $("file-input").addEventListener("change", function(){
+    var file=$("file-input").files[0]; if(!file) return;
+    var r=new FileReader(); r.onload=function(){ load(r.result); }; r.readAsText(file);
+  });
+  $("btn-parse-paste").addEventListener("click", function(){ load($("paste-area").value); });
+
+  function downloadCopy(){
+    var blob=new Blob([JSON.stringify(cfg,null,2)],{type:"application/json"});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download=(cfg.family||"config").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".json";
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  $("btn-download").addEventListener("click", downloadCopy);
+
+  $("btn-save").addEventListener("click", async function(){
+    if(!fileHandle) return;
+    try{
+      var writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(cfg,null,2));
+      await writable.close();
+      setStatus("Saved to "+fileHandle.name+" at "+new Date().toLocaleTimeString());
+    }catch(e){ setStatus("Save failed: "+e.message, true); }
+  });
+
+  $("btn-copy").addEventListener("click", function(){
+    navigator.clipboard.writeText(JSON.stringify(cfg,null,2)).then(function(){ setStatus("Copied to clipboard"); });
+  });
+
+  ghRestore();
+  $("btn-gh-toggle").addEventListener("click", function(){ $("gh-panel").hidden = !$("gh-panel").hidden; });
+  $("btn-gh-load").addEventListener("click", ghLoad);
+  $("btn-gh-commit").addEventListener("click", ghCommit);
+  $("btn-gh-forget").addEventListener("click", function(){
+    $("gh-token").value=""; ghPersist(); setGhStatus("Token forgotten.");
+  });
+})();
+</script>
+</body>
+</html>
