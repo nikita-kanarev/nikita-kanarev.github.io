@@ -15,6 +15,16 @@
   strings. Empty field = "no override", exactly like leaving the key out of
   the JSON — the tool won't inject defaults you didn't touch.
 
+  Hiding a feature: there is no "hidden" flag — the embeds render whatever is
+  in the arrays, so hiding means dropping the entry. Uncheck the box next to
+  a tag: in "Feature toggle labels" that removes it from cfg.features (the
+  Playground/Cuts pills), in "OpenType showcase" from cfg.opentype.features
+  (the showcase card). The two lists are independent — a tag that appears in
+  both has to be unchecked in both to disappear everywhere. Re-checking the
+  box before you save puts the entry back untouched. Note that whatever
+  generates these lists from the font file will re-add the feature next time
+  it runs, so a permanent removal belongs there too.
+
   Usage: "Open JSON…" (Chrome/Edge) uses the File System Access API — it keeps
   a handle to the picked file, so "Save" writes straight back to that same
   file on disk (no re-download, no re-upload dance). Firefox/Safari, or files
@@ -76,6 +86,12 @@
   .markup-hint code{background:rgba(20,18,16,.06);padding:1px 4px;border-radius:3px;}
   .phrase-row{display:grid;grid-template-columns:180px 1fr;gap:10px;align-items:start;margin-bottom:8px;}
   .phrase-row .gname{font-size:12px;padding-top:9px;color:var(--ink);}
+  .showbox{width:14px;height:14px;margin-right:8px;vertical-align:-2px;accent-color:var(--rust);cursor:pointer;}
+  .fttag{font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;}
+  .off{opacity:.45;}
+  .off .fttag,.off .tagname{text-decoration:line-through;}
+  .xref{display:block;font-size:11px;color:var(--soft);opacity:.8;font-family:ui-sans-serif,system-ui,sans-serif;letter-spacing:0;text-transform:none;margin-top:4px;}
+  .xref.inline{display:inline;margin:0 0 0 10px;}
   .gh-panel{background:rgba(255,255,255,.6);border-bottom:1px solid var(--edge);padding:16px 24px;}
   .gh-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;max-width:760px;}
   .gh-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
@@ -140,7 +156,7 @@
   </section>
 
   <section id="sec-features">
-    <h2>Feature toggle labels <span class="hint">(Playground / Cuts feature pills)</span></h2>
+    <h2>Feature toggle labels <span class="hint">(Playground / Cuts feature pills — uncheck to drop a feature from the config)</span></h2>
     <div id="features-list"></div>
   </section>
 
@@ -162,7 +178,7 @@
   </section>
 
   <section id="sec-opentype">
-    <h2>OpenType showcase</h2>
+    <h2>OpenType showcase <span class="hint">(uncheck to drop a card from the config)</span></h2>
     <div class="grid3">
       <div><label class="hint">Columns (desktop)</label><input type="number" id="f-ot-cols" placeholder="3"></div>
       <div><label class="hint">Columns (mobile)</label><input type="number" id="f-ot-colsmob" placeholder="1"></div>
@@ -340,6 +356,33 @@
   function ensure(obj, key){ if(!obj[key]) obj[key]={}; return obj[key]; }
   function prune(obj, key){ if(obj[key] && Object.keys(obj[key]).length===0) delete obj[key]; }
 
+  // ── Hiding a feature = not being in the array at all; there's no "hidden"
+  //    flag the embeds would honour. Unchecking splices the entry out but
+  //    remembers it (object + index) so re-checking puts it back at its old
+  //    slot — nothing is actually lost until you save.
+  function bindShow(box, list, obj){
+    var cb=box.querySelector(".showbox"), at=null;
+    cb.checked = true;
+    cb.addEventListener("change", function(){
+      if(cb.checked){
+        list.splice(at==null||at>list.length?list.length:at, 0, obj);
+      }else{
+        var i=list.indexOf(obj);
+        if(i>=0){ at=i; list.splice(i,1); }
+      }
+      box.classList.toggle("off", !cb.checked);
+      Array.prototype.forEach.call(box.querySelectorAll("input:not(.showbox),textarea"), function(el){
+        el.disabled = !cb.checked;
+      });
+    });
+  }
+  // does this tag also live in the other feature list? (they're independent)
+  function hasTag(list, tag){ return (list||[]).some(function(f){ return f.tag===tag; }); }
+  function xref(text, inline){
+    var s=document.createElement("span"); s.className="xref"+(inline?" inline":"");
+    s.textContent=text; return s;
+  }
+
   function renderBasics(){
     bindText("f-family", function(){return cfg.family;}, function(v){ if(v===undefined) return; cfg.family=v; });
     bindText("f-text", function(){return cfg.text;}, function(v){ v===undefined?delete cfg.text:cfg.text=v; });
@@ -363,17 +406,20 @@
 
   function renderFeatures(){
     var wrap=$("features-list"); wrap.innerHTML="";
-    (cfg.features||[]).forEach(function(f){
+    var list=cfg.features||[], showcase=(cfg.opentype||{}).features;
+    list.slice().forEach(function(f){
       var row=document.createElement("div"); row.className="row";
-      row.innerHTML='<label style="font-family:ui-monospace,Menlo,monospace;text-transform:uppercase;">'+esc(f.tag)+'</label><div></div>';
+      row.innerHTML='<label><input type="checkbox" class="showbox"><span class="fttag">'+esc(f.tag)+'</span></label><div></div>';
       var cell=row.querySelector("div:last-child");
       var input=document.createElement("input"); input.type="text"; input.value=f.label||"";
       input.placeholder=f.tag;
       input.addEventListener("input", function(){ f.label = input.value || undefined; if(f.label===undefined) delete f.label; });
       cell.appendChild(input);
+      if(hasTag(showcase, f.tag)) cell.appendChild(xref("also an OpenType showcase card — uncheck it there too to hide the feature everywhere"));
+      bindShow(row, list, f);
       wrap.appendChild(row);
     });
-    if(!(cfg.features||[]).length) wrap.innerHTML='<div class="hint">No cfg.features in this config.</div>';
+    if(!list.length) wrap.innerHTML='<div class="hint">No cfg.features in this config.</div>';
   }
 
   function renderCuts(){
@@ -434,10 +480,10 @@
     if(!feats || !feats.length){ wrap.innerHTML='<div class="hint">No opentype.features in this config — the showcase falls back to the plain feature list above with a generic sample.</div>'; return; }
     var faceFamily = fontFaceFromCfg();
 
-    feats.forEach(function(f){
+    feats.slice().forEach(function(f){
       var box=document.createElement("div"); box.className="feat";
       box.innerHTML =
-        '<div class="tag">'+esc(f.tag)+'</div>'+
+        '<div class="tag"><label><input type="checkbox" class="showbox"><span class="tagname">'+esc(f.tag)+'</span></label></div>'+
         '<div class="row" style="grid-template-columns:80px 1fr"><label>Name</label><input type="text" class="fname"></div>'+
         '<div class="row" style="grid-template-columns:80px 1fr;margin-top:8px"><label>Sample</label><div><textarea class="fsample" rows="2"></textarea>'+
         '<div class="markup-hint">Wrap the glyphs this feature changes in <code>{{…}}</code> — e.g. <code>ff {{fi fl}} fb</code>. No <code>{{}}</code> at all → the whole sample counts as changed.</div></div></div>'+
@@ -461,6 +507,8 @@
         updatePreview();
       });
       updatePreview();
+      if(hasTag(cfg.features, f.tag)) box.querySelector(".tag").appendChild(xref("also a feature toggle pill — uncheck it above too to hide the feature everywhere", true));
+      bindShow(box, feats, f);
       wrap.appendChild(box);
     });
   }
