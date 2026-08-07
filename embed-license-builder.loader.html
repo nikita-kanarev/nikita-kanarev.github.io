@@ -1,0 +1,41 @@
+<!--
+  LICENSE BUILDER — загрузчик для Webflow Embed. GENERATED, не править руками:
+  правь embed-license-builder.fetch.html и пересобирай
+    node build-external.js embed-license-builder.fetch.html
+
+  Тело билдера (стили, разметка, логика) живёт в fx-license-builder.js на хосте из
+  data-fx-base — там же, где <slug>.json и woff2. Правка стилей или логики
+  доезжает до сайта заливкой этого файла, переклеивать Embed НЕ нужно.
+
+  Все Custom attributes ставятся как раньше — на .w-embed или прямо здесь:
+  data-fx-base, data-api-base, data-paddle-token, data-paddle-env,
+  data-fx-subfamily, data-fx-slug, data-url-enterprise, data-invoice-email,
+  data-url-invoice, data-invoice-min, data-currency, data-single-base,
+  data-single-exponent, data-full-base, data-fx-cut-size.
+  Плюс один новый: data-fx-js — полный URL скрипта, перебивает data-fx-base
+  (нужен для локального теста и для срочного обхода кэша через ?v=N).
+-->
+<div class="fx-licb" data-fx-base="https://nikita-kanarev.github.io/" data-api-base="https://fluxetype-api.i-ec8.workers.dev" data-paddle-token="" data-paddle-env="" data-url-enterprise="" data-invoice-email="" data-url-invoice="" data-invoice-min="">
+  <div data-fx-cfg hidden></div>
+  <script>
+  (function(){
+    var root = document.currentScript.closest(".fx-licb");
+    // резерв высоты: без него секция схлопнута в ноль и страница дёргается,
+    // когда билдер появляется. Снимается тем же внешним файлом после вставки.
+    root.style.minHeight = "620px";
+    function attr(n){ var v=root.getAttribute(n); if((v==null||v==="")&&root.parentElement) v=root.parentElement.getAttribute(n); return (v==null||v==="")?"":v; }
+    var src = attr("data-fx-js") || (attr("data-fx-base") + "fx-license-builder.js");
+    function go(){ window.FxLicenseBuilder(root); }
+    if (window.FxLicenseBuilder) return go();
+    // несколько эмбедов на странице тянут ОДИН тег: второй просто ждёт его
+    root.setAttribute("data-fx-wait","1");
+    var s = document.querySelector("script[data-fx-licb]");
+    if (!s){ s = document.createElement("script"); s.setAttribute("data-fx-licb",""); s.src = src; document.head.appendChild(s); }
+    s.addEventListener("load", function(){ root.removeAttribute("data-fx-wait"); go(); });
+    s.addEventListener("error", function(){
+      root.style.minHeight = "";
+      root.innerHTML = '<div style="font:13px ui-monospace,Menlo,monospace;color:#b00;padding:24px;border:1px dashed #b00;border-radius:8px;line-height:1.6">\u26a0 License Builder \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u043b\u0441\u044f.<br>' + src + '</div>';
+    });
+  })();
+  </script>
+</div>
