@@ -1686,7 +1686,7 @@
         "name": "Black enclosed digits",
         "sample": [
           {
-            "hl": "⃝ ⃞ ① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⓪"
+            "hl": "① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⓪"
           }
         ]
       },
