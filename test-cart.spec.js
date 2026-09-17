@@ -206,9 +206,45 @@
     t("чужая — подписана", /Fluxetype/.test(d1b.tlines[0].name), true);
     C.setStyles(ARCH,["x","y"]);
     var d2=C.deriveTicket({ownSlug:"fluxetype"});
-    t("две позиции: строка на позицию + подпись лицензии", d2.tlines.length, 3);
+    // блок на гарнитуру: заголовок + состав + имена начертаний + лицензия
+    t("две позиции: по блоку на гарнитуру", d2.tlines.length, 8);
     t("итог совпадает с totals", d2.total, C.totals().total);
-    t("подпись лицензии последней", d2.tlines[2].name, "Desktop · 1 user");
+    t("заголовок блока — имя гарнитуры", d2.tlines[0].name, "<b>Fluxetype</b>");
+    t("и он несёт цену позиции", d2.tlines[0].val, "$"+C.itemPrice(C.items()[0]).toLocaleString("en-US"));
+    t("под ним — что взято", /3 individual styles/.test(d2.tlines[1].name), true);
+    t("и какие именно начертания", d2.tlines[2].name, "a, b, c");
+    t("лицензия — внутри блока своей гарнитуры", d2.tlines[3].name, "Desktop · 1 user");
+    t("второй блок начинается отбивкой", d2.tlines[4].gap, true);
+    t("и это вторая гарнитура", d2.tlines[4].name, "<b>Archaism</b>");
+    // одинаковая лицензия больше НЕ выносится общей строкой в конец: заказ
+    // должен читаться по гарнитурам, даже если подпись повторяется
+    t("лицензия повторена у второй", d2.tlines[7].name, "Desktop · 1 user");
+    // две позиции одной гарнитуры — это одна покупка: заголовок один, цена общая
+    C.setSubfamilies(FLUX,["Text"]);
+    var d3=C.deriveTicket({});
+    t("две позиции одной гарнитуры — один заголовок", d3.tlines.filter(function(l){return l.head;}).length, 2);
+    t("в заголовке — сумма по гарнитуре", d3.tlines[0].val,
+      "$"+C.itemsOf("fluxetype").reduce(function(a,x){return a+C.itemPrice(x);},0).toLocaleString("en-US"));
+    t("обе позиции названы под ним", /sub-famil/.test(d3.tlines[3].name), true);
+    C.setSubfamilies(FLUX,[]);
+    t("имена подрезаны на восьмом", C.pickedText({product:"single",cuts:["1","2","3","4","5","6","7","8","9"]}),
+      "1, 2, 3, 4, 5, 6, 7, 8, +1 more");
+    t("у full family имён нет", C.pickedText({product:"full",cuts:[]}), "");
+    /* only — билет страницы шрифта: она продаёт СВОЙ шрифт, остальное лежит в
+       заказе и оплачивается на /cart. Раньше кнопка «Get font» на странице
+       Polytype списывала бы деньги и за Fluxetype, набранный на другой странице. */
+    var dOnly=C.deriveTicket({only:"archaism", ownSlug:"archaism"});
+    t("only: в билете одна гарнитура", dOnly.items.length, 1);
+    t("only: Total — только её", dOnly.total, C.itemPrice(C.itemsOf("archaism")[0]));
+    t("only: заголовков блоков нет — позиция одна", dOnly.tlines.filter(function(l){return l.head;}).length, 0);
+    t("only: чекаут платит за неё одну", C.checkoutSelection(null,"archaism").items.length, 1);
+    t("без only чекаут платит за весь заказ", C.checkoutSelection(null).items.length, C.items().length);
+    // домен — тоже по своему заказу: web у чужой гарнитуры не должен блокировать
+    // кнопку на странице, где web не взят
+    C.toggleLicense("web","fluxetype");
+    t("web у чужой: заказу домен нужен", C.domainMissing(), true);
+    t("а странице archaism — нет", C.domainMissing("archaism"), false);
+    C.toggleLicense("web","fluxetype");
     // Enterprise включаем ГАРНИТУРЕ: правка умолчания не должна задним числом
     // менять цену того, что уже лежит в заказе
     C.toggleLicense("ent","fluxetype");

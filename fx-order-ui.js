@@ -230,6 +230,85 @@
     return {render:render, reflow:reflow};
   }
 
-  window.FxOrderUI = { inject:inject, usage:usage, reach:reach, css:function(scope){ return CSS.replace(/\{S\}/g, scope); } };
+  /* ---- сетка начертаний ----------------------------------------------------
+     ОДНА на оба экрана: страницу шрифта и ящик в корзине. Ветки перенесены из
+     билдера дословно — именно они дают подпись ячейки «Thin», а не «Petit Thin»
+     (слово вкладки и имя субсемейства уже сказаны выше), и раскладку колонками
+     по оптике. Пока ящик рисовал сетку по-своему, у него были и другие подписи,
+     и переносы в две строки, и другой размер ячеек.
+
+     Возвращает {html, display, cols, wide} — хозяин сам кладёт это в контейнер:
+     у билдера это [data-grid], у ящика свой div. */
+  function stylesGrid(T, o){
+    o = o || {};
+    var L = o.layout || T.L0;
+    var isSel = o.isSel || function(){ return false; };
+    var tabsShown = o.tabs || [];
+    var expand = !!o.expand;
+    var sub = o.sub || "all";
+    var activeInsts = o.instances || T.instances;
+    var esc2 = esc;
+    function cell(inst, label){
+      return '<button type="button" class="cell '+(isSel(inst.name)?"sel":"")+'" data-name="'+esc2(inst.name)+'">'+
+             '<span class="cs" style="font-variation-settings:'+T.vset(inst)+'">'+esc2(label)+'</span></button>';
+    }
+    if(L.hasVariants){
+      if(T.subfamilies && o.sections!==false){
+        var subOrder = o.subOrder || T.subfamilies;
+        var html = subOrder.map(function(sf){
+          var Ls = T.layoutFor(T.instancesOfSub(sf.slug), sf.slug);
+          // в развёрнутом виде у секции столько строк, сколько вкладок, и каждая
+          // подписана: имена ячеек во всех строках одинаковые, без подписи три
+          // ряда неразличимы
+          var rows = tabsShown.map(function(t){
+            var cells = Ls.groups.map(function(g){
+              var v = g.variants.filter(function(x){ return x.label===t; })[0];
+              if(!v) return '<div class="cell empty"></div>';
+              return cell(v.inst, g.name);
+            });
+            return (expand?'<div class="cs-sub">'+esc2(t)+'</div>':'')+
+                   '<div class="cs-row" style="grid-template-columns:repeat('+Ls.groups.length+',minmax(0,1fr))">'+cells.join("")+'</div>';
+          }).join("");
+          return '<div class="cutsection"><div class="cs-head"><span class="cs-lab">'+esc2(sf.label)+'</span></div>'+rows+'</div>';
+        }).join("");
+        return {html:html, display:"block", cols:"", wide:true};
+      }
+      if(L.splitNames){
+        // колонки — оптика, строки — вес; заголовков нет, имя ячейки несёт и то и то
+        var h2 = tabsShown.map(function(t){
+          return (expand?'<div class="cs-sub">'+esc2(t)+'</div>':'')+L.ROWK.map(function(r){
+            return L.COLW.map(function(c){
+              var g=L.groupByName[c+" "+r];
+              var v=g&&g.variants.filter(function(x){ return x.label===t; })[0];
+              if(!v) return '<div class="cell empty"></div>';
+              return cell(v.inst, g.name);
+            }).join("");
+          }).join("");
+        }).join("");
+        return {html:h2, display:"grid", cols:"repeat("+L.COLW.length+",minmax(0,1fr))", wide:false};
+      }
+      var h3 = tabsShown.map(function(t){
+        return (expand?'<div class="cs-sub">'+esc2(t)+'</div>':'')+L.groups.map(function(g){
+          var v=g.variants.filter(function(x){ return x.label===t; })[0];
+          return v ? cell(v.inst, g.name) : "";
+        }).join("");
+      }).join("");
+      return {html:h3, display:"flex", cols:"", wide:false};
+    }
+    // без variantAxis: таблица по значениям осей (Archaism), иначе плоский список
+    if(L.flatTable){
+      var h4 = L.flatTable.rowAx.vals.map(function(rv){
+        return L.flatTable.colAx.vals.map(function(cv){
+          var inst=L.flatTable.byKey[rv+"|"+cv];
+          return inst ? cell(inst, T.family+" "+inst.name) : '<div class="cell empty"></div>';
+        }).join("");
+      }).join("");
+      return {html:h4, display:"grid", cols:"repeat("+L.flatTable.colAx.vals.length+",minmax(0,1fr))", wide:true};
+    }
+    var h5 = activeInsts.map(function(inst){ return cell(inst, T.dispName(inst, sub)); }).join("");
+    return {html:h5, display:"flex", cols:"", wide:false};
+  }
+
+  window.FxOrderUI = { inject:inject, usage:usage, reach:reach, stylesGrid:stylesGrid, css:function(scope){ return CSS.replace(/\{S\}/g, scope); } };
   try { window.dispatchEvent(new CustomEvent("fx:order-ui:ready")); } catch(e){}
 })();

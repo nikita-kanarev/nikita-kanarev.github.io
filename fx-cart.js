@@ -408,10 +408,13 @@
   // Каждая позиция считается по лицензии СВОЕЙ гарнитуры. custom — если хотя бы
   // одна гарнитура ушла в Enterprise или верхний стоп шкалы: считать заказ
   // частично и показать сумму значило бы назвать цену, которой нет.
-  function totals(cart){
+  // only — считать не весь заказ, а ОДНУ гарнитуру: на странице шрифта покупают
+  // её одну, остальное лежит в корзине и оплачивается на /cart.
+  function totals(cart, only){
     var c = cart || read() || empty();
+    var list = only ? c.items.filter(function(it){ return it.slug===only; }) : c.items;
     var sum = 0, stale = false, custom = false, families = {}, styles = 0;
-    c.items.forEach(function(it){
+    list.forEach(function(it){
       families[it.slug] = 1;
       styles += styleCount(it);
       var L = licenseOf(it.slug, c);
@@ -419,10 +422,10 @@
       var p = itemPrice(it, L);
       if (p==null) stale = true; else sum += p;
     });
-    if (!c.items.length) custom = isCustom(c.license);
+    if (!list.length) custom = isCustom(licenseOf(only, c));
     return { total: custom ? null : sum, custom: custom, stale: stale,
              families: Object.keys(families).length, styles: styles,
-             currency: (c.items[0] && c.items[0].price && c.items[0].price.currency) || "$" };
+             currency: (list[0] && list[0].price && list[0].price.currency) || "$" };
   }
 
   /* ---- домен веб-лицензии --------------------------------------------------
@@ -458,8 +461,8 @@
   }
   // веб-лицензия выбрана, а домена нет → покупать нечего: сертификат ушёл бы без
   // объекта лицензии, и его пришлось бы перевыпускать руками
-  function domainMissing(){
-    return webPicked() && !validDomain((read()||empty()).license.webDomain);
+  function domainMissing(only){
+    return webPicked(only || undefined) && !validDomain((read()||empty()).license.webDomain);
   }
 
   /* ---- билет: строки и подписи ----------------------------------------------
@@ -501,12 +504,18 @@
   }
   function deriveTicket(opts){
     opts = opts || {};
-    var cart = read() || empty(), items = cart.items;
+    var cart = read() || empty();
+    /* only — билет ОДНОЙ гарнитуры. Страница шрифта продаёт свой шрифт: чужие
+       позиции там видны быть не должны ни строкой, ни в Total — иначе кнопка
+       «Get font» списывала бы деньги за то, что покупатель набирал на другой
+       странице и мог ещё передумать. Весь заказ целиком считает /cart. */
+    var only = opts.only || null;
+    var items = only ? cart.items.filter(function(it){ return it.slug===only; }) : cart.items;
     var own = opts.ownSlug || null;
     // rows — для поля домена и текста инвойса: берём лицензию «своей» гарнитуры
     // на странице шрифта, иначе умолчание
     var rs = rows(licenseOf(own, cart)).filter(function(r){ return !!r.scale; });
-    var T = totals(cart);
+    var T = totals(cart, only);
     var custom = T.custom;
     var cur = opts.currency || T.currency || "$";
     var money = function(n){ return cur+Math.round(n).toLocaleString("en-US"); };
@@ -580,7 +589,7 @@
       priceText="—"; buyDisabled=true;
       buyLabel=(opts.staleCta||"Open {family} to price it").replace("{family}", st?st.family:"the typeface");
     }
-    else if(domainMissing()){ priceText=total.toLocaleString("en-US"); buyLabel="Add your domain"; buyDisabled=true; }
+    else if(domainMissing(only)){ priceText=total.toLocaleString("en-US"); buyLabel="Add your domain"; buyDisabled=true; }
     else { priceText=total.toLocaleString("en-US"); buyLabel=opts.buyLabel||"Get font"; }
 
     return { items:items, rows:rs, hasCustom:custom, total:total, famCount:T.families,
@@ -656,10 +665,12 @@
      позиции дублируем её поля наверх — существующий create-transaction читает
      именно их. Смешанный заказ он отобьёт, и это правильнее тихого списания за
      половину набора. Когда воркер перейдёт на items[], дубль убрать. */
-  function checkoutSelection(rs){
+  // only — платим за одну гарнитуру (страница шрифта). Без него — весь заказ (/cart).
+  function checkoutSelection(rs, only){
     var cart = read() || empty();
+    var list = only ? cart.items.filter(function(it){ return it.slug===only; }) : cart.items;
     var sel = { v:2,
-      items: cart.items.map(function(it){
+      items: list.map(function(it){
         return { slug:it.slug, family:String(it.family||it.slug).toLowerCase(), product:it.product,
                  cutNames:it.cuts.slice(), cutCount:it.cuts.length, subfamilies:it.subs.slice(),
                  // ⚠️ лицензия уехала ВНУТРЬ позиции: у каждой гарнитуры своя
@@ -668,7 +679,7 @@
       }),
       licenses: (rs||rows(cart.license)).filter(function(r){ return !!r.scale; })
                   .map(function(r){ return {id:r.license.id, scaleId:r.scale.id}; }),
-      webDomain: webPicked(cart.license) ? normDomain(cart.license.webDomain) : "" };
+      webDomain: webPicked(only || cart.license) ? normDomain(cart.license.webDomain) : "" };
     // Совместимость со старым воркером: одна позиция → её поля наверх, включая
     // лицензию именно этой гарнитуры (а не умолчание заказа).
     if(sel.items.length===1){
