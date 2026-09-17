@@ -104,10 +104,15 @@
   /* ---- usage cards --------------------------------------------------------
      Порядок и подписи берём из FxCart.LICENSES — та же таблица, что считает
      цену и что лежит в воркере. */
+  /* opts.slug — ЧЬЯ лицензия показывается. Лицензия принадлежит гарнитуре:
+     дисплейную берут в печать, текстовую на сайт, и общий набор заставлял бы
+     купить лишнее. Без slug контролы показывают значение по умолчанию (им
+     наполнится следующая добавленная гарнитура). */
   function usage(host, extraHost, opts){
     opts=opts||{};
+    function slug(){ return typeof opts.slug==="function" ? opts.slug() : opts.slug; }
     function render(){
-      var sel=FxCart.license().licenses;
+      var sel=FxCart.licenseOf(slug()).licenses;
       host.innerHTML = FxCart.LICENSES.filter(function(l){return FxCart.SCALES[l.id];}).map(function(l){
         return '<button class="ucard" type="button" data-u="'+l.id+'" aria-pressed="'+(sel.indexOf(l.id)>=0)+'">'+
           '<div class="uname">'+esc(l.name)+'</div>'+
@@ -130,10 +135,11 @@
   function reach(host, opts){
     opts=opts||{};
     var sliders=[], key=null;
+    function slug(){ return typeof opts.slug==="function" ? opts.slug() : opts.slug; }
 
     function makeOne(license){
       var def=FxCart.SCALES[license.id], items=def.items;
-      var sid=FxCart.license().scales[license.id]||items[0].id;
+      var sid=FxCart.licenseOf(slug()).scales[license.id]||items[0].id;
       var idx=Math.max(0,items.findIndex(function(s){return s.id===sid;}));
       var box=document.createElement("div"); box.className="rcap";
       box.innerHTML='<input type="range" min="0" max="'+(items.length-1)+'" step="1"><div class="fill"></div>'+
@@ -183,14 +189,14 @@
     }
 
     function render(){
-      var sel=FxCart.license().licenses;
+      var sel=FxCart.licenseOf(slug()).licenses;
       var rows=FxCart.LICENSES.filter(function(l){ return sel.indexOf(l.id)>=0 && FxCart.SCALES[l.id]; });
       // Капсулы пересобираются ТОЛЬКО когда меняется набор выбранных лицензий.
       // Раньше любой посторонний клик стирал .reach и строил ползунки заново:
       // позиция каретки восстанавливалась асинхронно, в rAF, и на тач-экране это
       // читалось как «ползунок дёргается сам по себе». Значение живёт в сторе,
       // от пропуска перерисовки не теряется.
-      var k=rows.map(function(l){return l.id;}).join(",");
+      var k=String(slug()||"")+"|"+rows.map(function(l){return l.id;}).join(",");
       if(k===key) return;
       key=k;
       host.innerHTML=""; sliders=[];

@@ -141,10 +141,21 @@
   }
 
   /* ---- схема -------------------------------------------------------------- */
+  /* ЛИЦЕНЗИЯ — ПО ГАРНИТУРЕ, а не на весь заказ и не на позицию.
+     Дисплейную гарнитуру берут в печать, текстовую — на сайт; общая лицензия
+     заставляла бы купить Web для обеих. Позиция мельче, чем надо: «эти два
+     начертания для десктопа, а субсемейство для веба» — не то, что кто-то
+     покупает. Поэтому ключ — slug семьи.
+       byFamily[slug] = {licenses, scales}   — что выбрано для этой гарнитуры
+       license = {licenses, scales, webDomain}
+         · licenses/scales — ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ для следующей гарнитуры
+           (частый случай «везде одно и то же» остаётся одним действием)
+         · webDomain — на весь заказ: это сайт покупателя, он один, и просить
+           его трижды значит просить одно и то же трижды */
   function empty(){
     return { v:1, t:Date.now(), rev:0,
              license:{ licenses:["desktop"], scales:{ desktop: defaultScaleId("desktop") }, webDomain:"" },
-             items:[] };
+             byFamily:{}, items:[] };
   }
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
   function str(x){ return typeof x==="string" ? x : ""; }
@@ -162,13 +173,27 @@
     if (!d || typeof d!=="object") return null;
     if (d.v!==1 || !d.t || (Date.now()-d.t) > TTL) return null;
     var lic = d.license && typeof d.license==="object" ? d.license : {};
-    var ids = arr(lic.licenses).filter(function(id){ return !!licById(id); });
-    if (!ids.length) ids = ["desktop"];
-    var scales = {};
-    ids.forEach(function(id){
-      if (!SCALES[id]) return;
-      var want = lic.scales && lic.scales[id];
-      scales[id] = scaleById(id, want) ? want : defaultScaleId(id);
+    // разбор одной лицензии: набор usage + шкала на каждый. Всё неизвестное
+    // выбрасывается, пустой набор превращается в desktop — заказ без
+    // использования не бывает.
+    function cleanLic(src){
+      var o = src && typeof src==="object" ? src : {};
+      var ids = arr(o.licenses).filter(function(id){ return !!licById(id); });
+      if (!ids.length) ids = ["desktop"];
+      var sc = {};
+      ids.forEach(function(id){
+        if (!SCALES[id]) return;
+        var want = o.scales && o.scales[id];
+        sc[id] = scaleById(id, want) ? want : defaultScaleId(id);
+      });
+      return { licenses:ids, scales:sc };
+    }
+    var base = cleanLic(lic), ids = base.licenses, scales = base.scales;
+    var byFamily = {};
+    var bf = d.byFamily && typeof d.byFamily==="object" ? d.byFamily : {};
+    Object.keys(bf).forEach(function(slug){
+      if (!str(slug)) return;
+      byFamily[String(slug).toLowerCase()] = cleanLic(bf[slug]);
     });
     var items = [];
     arr(d.items).forEach(function(it){
@@ -183,8 +208,13 @@
                    price: it.price && typeof it.price==="object" ? it.price : null,
                    stale: !it.price });
     });
+    // ⚠️ Миграция со старой схемы (одна лицензия на заказ): у кого корзина уже
+    // набрана, раздаём текущую лицензию всем гарнитурам заказа — иначе после
+    // обновления цена молча поехала бы на дефолт.
+    items.forEach(function(it){ if (!byFamily[it.slug]) byFamily[it.slug] = {licenses:ids.slice(), scales:JSON.parse(JSON.stringify(scales))}; });
     return { v:1, t:d.t, rev:(+d.rev||0),
              license:{ licenses:ids, scales:scales, webDomain:str(lic.webDomain).slice(0,200) },
+             byFamily: byFamily,
              items: items };
   }
 
@@ -299,8 +329,20 @@
        full      → fullBase, а если его нет — кривая по всей семье
      Ровно это считает worker.js (SINGLE_BASE 50 / FULL_BASE 1380 /
      SINGLE_EXPONENT 0.75) — здесь мы его повторяем, а не задаём. */
+  /* Чья лицензия действует. Передали объект — считаем по нему; передали slug
+     (или позицию) — берём лицензию этой гарнитуры; ничего — значение по
+     умолчанию. Одна точка входа, чтобы «по какой лицензии считаем» не
+     разъехалось между ценой, билетом и кассой. */
+  function licenseOf(x, cart){
+    var c = cart || read() || empty();
+    if (x && typeof x==="object" && x.licenses) return x;          // готовая лицензия
+    var slug = x && typeof x==="object" ? x.slug : x;
+    if (slug && c.byFamily && c.byFamily[String(slug).toLowerCase()])
+      return c.byFamily[String(slug).toLowerCase()];
+    return c.license;
+  }
   function rows(license){
-    var L = license || (read() || empty()).license;
+    var L = licenseOf(license);
     return arr(L.licenses).map(function(id){
       var lic = licById(id); if (!lic) return null;
       var def = SCALES[id];
@@ -334,19 +376,21 @@
     }
     return sum;
   }
+  // license не передан → берём лицензию ГАРНИТУРЫ этой позиции
   function itemPrice(item, license){
     var base = itemBase(item);
     if (base==null) return null;
-    return Math.round(base * licenseSum(license));   // одно округление — как в worker.js
+    return Math.round(base * licenseSum(license || (item && item.slug)));   // одно округление — как в worker.js
   }
   // Разбивка позиции по usage ДЛЯ ПОКАЗА. Считается не независимо, а делением
   // уже известной цены: сначала точные доли, потом наибольшие остатки получают
   // по доллару, пока сумма не сойдётся с total. Иначе билет показывал бы строки,
   // которые не складываются в свой же итог.
   function itemLines(item, license){
-    var total = itemPrice(item, license);
+    var L = license || (item && item.slug);
+    var total = itemPrice(item, L);
     if (total==null) return null;
-    var base = itemBase(item), rs = rows(license), out = [], sum = 0;
+    var base = itemBase(item), rs = rows(L), out = [], sum = 0;
     rs.forEach(function(r){
       var custom = r.license.custom || !r.scale || r.scale.custom;
       var exact = custom ? 0 : base * r.license.mult * r.scale.mult;
@@ -361,15 +405,21 @@
     });
     return out;
   }
+  // Каждая позиция считается по лицензии СВОЕЙ гарнитуры. custom — если хотя бы
+  // одна гарнитура ушла в Enterprise или верхний стоп шкалы: считать заказ
+  // частично и показать сумму значило бы назвать цену, которой нет.
   function totals(cart){
     var c = cart || read() || empty();
-    var sum = 0, stale = false, custom = isCustom(c.license), families = {}, styles = 0;
+    var sum = 0, stale = false, custom = false, families = {}, styles = 0;
     c.items.forEach(function(it){
       families[it.slug] = 1;
       styles += styleCount(it);
-      var p = itemPrice(it, c.license);
+      var L = licenseOf(it.slug, c);
+      if (isCustom(L)) custom = true;
+      var p = itemPrice(it, L);
       if (p==null) stale = true; else sum += p;
     });
+    if (!c.items.length) custom = isCustom(c.license);
     return { total: custom ? null : sum, custom: custom, stale: stale,
              families: Object.keys(families).length, styles: styles,
              currency: (c.items[0] && c.items[0].price && c.items[0].price.currency) || "$" };
@@ -397,12 +447,19 @@
     return /^(?!-)[^\s.\/\\@:,;"'<>()\[\]]+(?:\.(?!-)[^\s.\/\\@:,;"'<>()\[\]]+)+$/.test(v)
       && !/-\./.test(v) && !/-$/.test(v);
   }
-  function webPicked(license){ return (license||(read()||empty()).license).licenses.indexOf("web")>=0; }
+  // Домен на весь заказ: он нужен, если ХОТЬ ОДНА гарнитура взята под веб.
+  // Без позиций смотрим на значение по умолчанию — так билдер знает, показывать
+  // ли поле, ещё до того, как что-то выбрано.
+  function webPicked(x){
+    var c = read()||empty();
+    if (x) return arr(licenseOf(x, c).licenses).indexOf("web")>=0;
+    if (!c.items.length) return c.license.licenses.indexOf("web")>=0;
+    return c.items.some(function(it){ return arr(licenseOf(it.slug, c).licenses).indexOf("web")>=0; });
+  }
   // веб-лицензия выбрана, а домена нет → покупать нечего: сертификат ушёл бы без
   // объекта лицензии, и его пришлось бы перевыпускать руками
-  function domainMissing(license){
-    var L = license || (read()||empty()).license;
-    return webPicked(L) && !validDomain(L.webDomain);
+  function domainMissing(){
+    return webPicked() && !validDomain((read()||empty()).license.webDomain);
   }
 
   /* ---- билет: строки и подписи ----------------------------------------------
@@ -434,9 +491,11 @@
     opts = opts || {};
     var cart = read() || empty(), items = cart.items;
     var own = opts.ownSlug || null;
-    var rs = rows(cart.license).filter(function(r){ return !!r.scale; });
-    var custom = isCustom(cart.license);
+    // rows — для поля домена и текста инвойса: берём лицензию «своей» гарнитуры
+    // на странице шрифта, иначе умолчание
+    var rs = rows(licenseOf(own, cart)).filter(function(r){ return !!r.scale; });
     var T = totals(cart);
+    var custom = T.custom;
     var cur = opts.currency || T.currency || "$";
     var money = function(n){ return cur+Math.round(n).toLocaleString("en-US"); };
 
@@ -446,28 +505,40 @@
                priceText:"—", buyLabel:opts.emptyCta||"Choose an option", buyDisabled:true };
     }
 
+    // подпись лицензии одной строкой: «Desktop · 2–5 + Web · ≤100K»
+    function useText(L){
+      return rows(L).filter(function(r){ return !r.license.custom && r.scale && !r.scale.custom; })
+                    .map(function(r){ return r.license.name+" · "+r.scale.name; }).join(" + ");
+    }
+    // у каждой гарнитуры своя лицензия; если у всех она одна и та же, не
+    // повторяем её под каждой строкой — выносим общей подписью в конец
+    var uses = items.map(function(x){ return useText(licenseOf(x.slug, cart)); });
+    var sameUse = uses.every(function(u){ return u===uses[0]; });
+
     var tlines=[], first=true;
     if(items.length===1){
       var it=items[0];
       tlines.push({name:itemLabel(it, it.slug!==own), val:"", muted:true});
-      (itemLines(it, cart.license)||[]).forEach(function(l){
+      (itemLines(it)||[]).forEach(function(l){
         var nm=l.license.name+(l.scale?" · "+l.scale.name:"");
         if(l.custom){ tlines.push({name:nm, val:"Custom", muted:true}); return; }
         tlines.push({name:nm, val:(first?"":"+ ")+money(l.amount)});
         first=false;
       });
     } else {
-      items.forEach(function(x){
-        var pr=itemPrice(x, cart.license);
+      items.forEach(function(x, i){
+        var pr=itemPrice(x);
         tlines.push({name:itemLabel(x, x.slug!==own), val: pr==null ? "—" : (first?"":"+ ")+money(pr)});
         if(pr!=null) first=false;
+        // лицензия этой гарнитуры — прямо под её строкой, когда они разные
+        if(!sameUse && uses[i]) tlines.push({name:uses[i], val:"", muted:true});
       });
-      var use=rs.filter(function(r){ return !r.license.custom && !r.scale.custom; })
-               .map(function(r){ return r.license.name+" · "+r.scale.name; }).join(" + ");
-      if(use) tlines.push({name:use, val:"", muted:true});
+      if(sameUse && uses[0]) tlines.push({name:uses[0], val:"", muted:true});
     }
-    if(cart.license.licenses.some(function(id){ var l=licById(id); return l&&l.custom; }))
-      tlines.push({name:"Enterprise", val:"Custom", muted:true});
+    var anyEnt = items.length
+      ? items.some(function(x){ return licenseOf(x.slug, cart).licenses.some(function(id){ var l=licById(id); return l&&l.custom; }); })
+      : cart.license.licenses.some(function(id){ var l=licById(id); return l&&l.custom; });
+    if(anyEnt) tlines.push({name:"Enterprise", val:"Custom", muted:true});
 
     var total=T.total||0, priceText, buyLabel, buyDisabled=false;
     if(custom){ priceText="Custom"; buyLabel="Contact us"; }
@@ -477,7 +548,7 @@
       priceText="—"; buyDisabled=true;
       buyLabel=(opts.staleCta||"Open {family} to price it").replace("{family}", st?st.family:"the typeface");
     }
-    else if(domainMissing(cart.license)){ priceText=total.toLocaleString("en-US"); buyLabel="Add your domain"; buyDisabled=true; }
+    else if(domainMissing()){ priceText=total.toLocaleString("en-US"); buyLabel="Add your domain"; buyDisabled=true; }
     else { priceText=total.toLocaleString("en-US"); buyLabel=opts.buyLabel||"Get font"; }
 
     return { items:items, rows:rs, hasCustom:custom, total:total, famCount:T.families,
@@ -558,13 +629,19 @@
     var sel = { v:2,
       items: cart.items.map(function(it){
         return { slug:it.slug, family:String(it.family||it.slug).toLowerCase(), product:it.product,
-                 cutNames:it.cuts.slice(), cutCount:it.cuts.length, subfamilies:it.subs.slice() };
+                 cutNames:it.cuts.slice(), cutCount:it.cuts.length, subfamilies:it.subs.slice(),
+                 // ⚠️ лицензия уехала ВНУТРЬ позиции: у каждой гарнитуры своя
+                 licenses: rows(licenseOf(it.slug, cart)).filter(function(r){ return !!r.scale; })
+                             .map(function(r){ return {id:r.license.id, scaleId:r.scale.id}; }) };
       }),
       licenses: (rs||rows(cart.license)).filter(function(r){ return !!r.scale; })
                   .map(function(r){ return {id:r.license.id, scaleId:r.scale.id}; }),
       webDomain: webPicked(cart.license) ? normDomain(cart.license.webDomain) : "" };
+    // Совместимость со старым воркером: одна позиция → её поля наверх, включая
+    // лицензию именно этой гарнитуры (а не умолчание заказа).
     if(sel.items.length===1){
       var one=sel.items[0];
+      sel.licenses=one.licenses;
       sel.family=one.family; sel.product=one.product;
       sel.cutNames=one.cutNames; sel.cutCount=one.cutCount; sel.subfamilies=one.subfamilies;
     }
@@ -621,6 +698,9 @@
   //         totalInstances, subCuts:{label:[names]}}}
   function ensure(cart, meta, product){
     var it = find(cart, meta.slug, product);
+    // новая гарнитура в заказе получает лицензию по умолчанию (последнюю
+    // выбранную) — иначе её пришлось бы настраивать заново каждый раз
+    targetLic(cart, meta.slug);
     if (!it){
       it = { slug:meta.slug, family:meta.family||meta.slug, product:product, cuts:[], subs:[], price:null, stale:true };
       cart.items.push(it);
@@ -749,38 +829,59 @@
     write(cart, "remove-family");
     return { ok:true, cart:clone(cart) };
   }
+  // «Remove everything» — это именно начать сначала: лицензии гарнитур уходят
+  // вместе с позициями. Иначе набранный заново заказ молча получал бы условия
+  // от прошлого, и цена отличалась бы от той, которую человек ожидает.
+  // removeFamily, наоборот, лицензию помнит: убрал и вернул — выбор на месте.
   function clearAll(){
     var cart = read() || empty();
     cart.items = [];
+    cart.byFamily = {};
     write(cart, "clear");
     return { ok:true, cart:clone(cart) };
   }
 
-  function setLicenses(ids){
+  /* Все три правки лицензии принимают slug гарнитуры. Передали — меняем её
+     лицензию; не передали — меняем ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ (им наполнится
+     следующая добавленная гарнитура). Правка гарнитуры заодно обновляет
+     умолчание: «везде одно и то же» должно оставаться одним действием. */
+  function targetLic(cart, slug){
+    if (!slug) return cart.license;
+    slug = String(slug).toLowerCase();
+    if (!cart.byFamily[slug])
+      cart.byFamily[slug] = { licenses: cart.license.licenses.slice(),
+                              scales: JSON.parse(JSON.stringify(cart.license.scales)) };
+    return cart.byFamily[slug];
+  }
+  function setLicenses(ids, slug){
     var cart = read() || empty();
     ids = arr(ids).filter(function(id){ return !!licById(id); });
     if (!ids.length) return { ok:false };
-    cart.license.licenses = ids;
+    var L = targetLic(cart, slug);
+    L.licenses = ids;
     var keep = {};
     ids.forEach(function(id){
       if (!SCALES[id]) return;
-      keep[id] = scaleById(id, cart.license.scales[id]) ? cart.license.scales[id] : defaultScaleId(id);
+      keep[id] = scaleById(id, L.scales[id]) ? L.scales[id] : defaultScaleId(id);
     });
-    cart.license.scales = keep;
+    L.scales = keep;
+    if (slug){ cart.license.licenses = ids.slice(); cart.license.scales = JSON.parse(JSON.stringify(keep)); }
     write(cart, "license");
     return { ok:true, cart:clone(cart) };
   }
-  function toggleLicense(id){
+  function toggleLicense(id, slug){
     var cart = read() || empty();
-    var cur = cart.license.licenses.slice(), i = cur.indexOf(id);
+    var cur = licenseOf(slug, cart).licenses.slice(), i = cur.indexOf(id);
     if (i>=0){ if (cur.length<2) return { ok:false }; cur.splice(i,1); }
     else cur.push(id);
-    return setLicenses(cur);
+    return setLicenses(cur, slug);
   }
-  function setScale(licId, scaleId){
+  function setScale(licId, scaleId, slug){
     var cart = read() || empty();
     if (!scaleById(licId, scaleId)) return { ok:false };
-    cart.license.scales[licId] = scaleId;
+    var L = targetLic(cart, slug);
+    L.scales[licId] = scaleId;
+    if (slug) cart.license.scales[licId] = scaleId;
     write(cart, "scale");
     return { ok:true, cart:clone(cart) };
   }
@@ -806,7 +907,7 @@
     styleCount: styleCount,
     subCutsOf: subCutsOf,
 
-    rows: rows, isCustom: isCustom, licenseSum: licenseSum,
+    rows: rows, isCustom: isCustom, licenseSum: licenseSum, licenseOf: licenseOf,
     itemBase: itemBase, itemPrice: itemPrice, itemLines: itemLines, totals: totals,
     normDomain: normDomain, validDomain: validDomain, webPicked: webPicked, domainMissing: domainMissing,
     itemLabel: itemLabel, deriveTicket: deriveTicket, esc: esc,
