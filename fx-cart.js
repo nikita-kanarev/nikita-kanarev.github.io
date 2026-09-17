@@ -471,8 +471,10 @@
        • одна  — строки по usage (привычный вид билдера). Суммы из itemLines():
          при округлении воркера независимо посчитанные строки не сложились бы
          в свой же Total;
-       • много — строка на позицию со своей ценой, лицензия одной приглушённой
-         подписью. Матрицу «позиции × usage» в 400px не показать.
+       • много — блок на позицию: заголовок с именем гарнитуры и её ценой,
+         под ним подписи (состав, имена начертаний, лицензия ЭТОЙ гарнитуры).
+         Матрицу «позиции × usage» в 400px не показать, но и в один ряд их
+         сваливать нельзя — станет непонятно, что к какой гарнитуре относится.
      opts: {ownSlug, currency, emptyText, emptyCta, buyLabel, staleCta} */
   function esc(x){ return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function itemLabel(it, withFamily){
@@ -486,6 +488,16 @@
         flat=(it.price?it.price.singleBase:0)*k,
         pct=(base!=null&&flat>0)?Math.round((1-base/flat)*100):0;
     return pre+"<b>"+k+" individual style"+(k>1?"s":"")+"</b>"+(k>1&&pct>0?" · −"+pct+"% volume":"");
+  }
+  // Имена начертаний в билете: «1 individual style» не говорит КАКОЕ. Пока в
+  // заказе одна гарнитура, состав виден слева (сетка или чипы); когда их
+  // несколько, билет — единственное место, где позиции стоят рядом, и без имён
+  // он не даёт проверить, что куплено именно то. Длинные наборы подрезаем: чек
+  // не должен вырасти выше экрана и утащить кнопку вниз.
+  function pickedText(it){
+    if (!it || it.product!=="single") return "";   // у сабсемей и full состав назван строкой выше
+    var n = it.cuts.slice(0,8), rest = it.cuts.length - n.length;
+    return n.join(", ") + (rest>0 ? ", +"+rest+" more" : "");
   }
   function deriveTicket(opts){
     opts = opts || {};
@@ -510,10 +522,6 @@
       return rows(L).filter(function(r){ return !r.license.custom && r.scale && !r.scale.custom; })
                     .map(function(r){ return r.license.name+" · "+r.scale.name; }).join(" + ");
     }
-    // у каждой гарнитуры своя лицензия; если у всех она одна и та же, не
-    // повторяем её под каждой строкой — выносим общей подписью в конец
-    var uses = items.map(function(x){ return useText(licenseOf(x.slug, cart)); });
-    var sameUse = uses.every(function(u){ return u===uses[0]; });
 
     var tlines=[], first=true;
     if(items.length===1){
@@ -526,14 +534,38 @@
         first=false;
       });
     } else {
-      items.forEach(function(x, i){
-        var pr=itemPrice(x);
-        tlines.push({name:itemLabel(x, x.slug!==own), val: pr==null ? "—" : (first?"":"+ ")+money(pr)});
-        if(pr!=null) first=false;
-        // лицензия этой гарнитуры — прямо под её строкой, когда они разные
-        if(!sameUse && uses[i]) tlines.push({name:uses[i], val:"", muted:true});
+      /* Несколько гарнитур — каждая СВОИМ блоком, а не строкой в общем списке.
+         Плоским списком билет читался котлом: имя, состав, скидка и лицензия
+         стояли одной строкой, а приглушённая подпись лицензии висела между
+         позициями и было не видно, чья она. Теперь у гарнитуры заголовок с её
+         ценой, а под ним её же подписи: что взято, какие начертания и по какой
+         лицензии. Общую подпись «у всех одинаково» не выносим: экономия одной
+         строки стоила того, что заказ переставал читаться по гарнитурам. */
+      // Блок — на ГАРНИТУРУ, а не на позицию: отдельные начертания и субсемейство
+      // одной гарнитуры — это две позиции, но одна покупка и одна лицензия.
+      // Заголовком на каждую позицию имя гарнитуры повторялось бы дважды подряд.
+      var order=[], groups={};
+      items.forEach(function(x){
+        if(!groups[x.slug]){
+          groups[x.slug]={fam:x.family, use:useText(licenseOf(x.slug, cart)), list:[], sum:0, stale:false};
+          order.push(x.slug);
+        }
+        var g=groups[x.slug], pr=itemPrice(x);
+        g.list.push(x);
+        if(pr==null) g.stale=true; else g.sum+=pr;
       });
-      if(sameUse && uses[0]) tlines.push({name:uses[0], val:"", muted:true});
+      order.forEach(function(slug, i){
+        var g=groups[slug];
+        tlines.push({name:"<b>"+esc(g.fam)+"</b>", head:true, gap:i>0,
+                     val: g.stale ? "—" : (first?"":"+ ")+money(g.sum)});
+        if(!g.stale) first=false;
+        g.list.forEach(function(x){
+          tlines.push({name:itemLabel(x, false), val:"", sub:true});
+          var nm=pickedText(x);
+          if(nm) tlines.push({name:esc(nm), val:"", sub:true});
+        });
+        tlines.push({name:esc(g.use||"Not licensed yet"), val:"", sub:true});
+      });
     }
     var anyEnt = items.length
       ? items.some(function(x){ return licenseOf(x.slug, cart).licenses.some(function(id){ var l=licById(id); return l&&l.custom; }); })
@@ -910,7 +942,7 @@
     rows: rows, isCustom: isCustom, licenseSum: licenseSum, licenseOf: licenseOf,
     itemBase: itemBase, itemPrice: itemPrice, itemLines: itemLines, totals: totals,
     normDomain: normDomain, validDomain: validDomain, webPicked: webPicked, domainMissing: domainMissing,
-    itemLabel: itemLabel, deriveTicket: deriveTicket, esc: esc,
+    itemLabel: itemLabel, pickedText: pickedText, deriveTicket: deriveTicket, esc: esc,
     checkoutSelection: checkoutSelection, invoiceSpec: invoiceSpec,
     metaFromConfig: metaFromConfig, loadConfig: loadConfig,
 
