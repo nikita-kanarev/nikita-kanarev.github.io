@@ -502,6 +502,55 @@
     var n = it.cuts.slice(0,8), rest = it.cuts.length - n.length;
     return n.join(", ") + (rest>0 ? ", +"+rest+" more" : "");
   }
+  /* Блоки билета для /cart: гарнитура = свой мини-билет. Считается здесь, а не
+     на странице: это те же деньги словами, и расходиться билету страницы шрифта
+     с билетом корзины нельзя. Строки usage складываются ПО ГАРНИТУРЕ — суммы
+     позиций по каждому праву, чтобы строки сходились с суммой блока (itemLines
+     уже раздаёт цену позиции по usage с наибольшими остатками). */
+  function ticketBlocks(cart, cur){
+    var c = cart || read() || empty();
+    var money = function(n){ return (cur||"$")+Math.round(n).toLocaleString("en-US"); };
+    return famSlugs(c).map(function(slug){
+      var list = c.items.filter(function(it){ return it.slug===slug; });
+      var L = licenseOf(slug, c), rs = rows(L);
+      var lines = [], total = 0, stale = false, picked = [];
+      // строка-подпись на каждую позицию: что именно взято
+      list.forEach(function(it){
+        lines.push({ name:itemLabel(it, false), val:"", muted:true });
+        var p = itemPrice(it, L);
+        if (p==null) stale = true; else total += p;
+        var nm = pickedText(it); if (nm) picked.push(nm);
+      });
+      // суммы по usage: складываем разбивки позиций по индексу строки
+      var agg = rs.map(function(r){
+        return { license:r.license, scale:r.scale,
+                 custom: r.license.custom || !r.scale || r.scale.custom, amount:0 };
+      });
+      list.forEach(function(it){
+        (itemLines(it, L)||[]).forEach(function(l, i){ if (agg[i] && !l.custom) agg[i].amount += l.amount; });
+      });
+      var first = true;
+      agg.forEach(function(a){
+        var nm = a.license.name + (a.scale ? " · "+a.scale.name : "");
+        if (a.custom){ lines.push({ name:nm, val:"Custom", muted:true }); return; }
+        lines.push({ name:nm, val: stale ? "—" : money(a.amount) });
+        first = false;
+      });
+      return { slug:slug, family:list[0].family, items:list, lines:lines,
+               picked:picked.join(", "), sub:blockSub(list), total:total, stale:stale };
+    });
+  }
+  // подпись под именем гарнитуры: что за покупка, без цены
+  function blockSub(list){
+    if (list.length>1)
+      return list.reduce(function(n,x){ return n+styleCount(x); },0)+" styles · "+
+             list.map(function(x){ return x.product==="full" ? "full family"
+                    : x.product==="subfamily" ? "sub-families" : "individual styles"; }).join(" + ");
+    var it = list[0];
+    if (it.product==="full")      return "Full family (VF + statics) · "+styleCount(it)+" styles";
+    if (it.product==="subfamily") return it.subs.join(" + ")+" · VF + statics";
+    return it.cuts.length+" style"+(it.cuts.length===1?"":"s")+" · individual";
+  }
   function deriveTicket(opts){
     opts = opts || {};
     var cart = read() || empty();
@@ -594,6 +643,7 @@
 
     return { items:items, rows:rs, hasCustom:custom, total:total, famCount:T.families,
              styleCount:T.styles, stale:T.stale, tlines:tlines,
+             blocks: only ? [] : ticketBlocks(cart, cur),
              priceText:priceText, buyLabel:buyLabel, buyDisabled:buyDisabled };
   }
 
@@ -1014,7 +1064,8 @@
     rows: rows, isCustom: isCustom, licenseSum: licenseSum, licenseOf: licenseOf,
     itemBase: itemBase, itemPrice: itemPrice, itemLines: itemLines, totals: totals,
     normDomain: normDomain, validDomain: validDomain, webPicked: webPicked, domainMissing: domainMissing,
-    itemLabel: itemLabel, pickedText: pickedText, deriveTicket: deriveTicket, esc: esc,
+    itemLabel: itemLabel, pickedText: pickedText, ticketBlocks: ticketBlocks,
+    deriveTicket: deriveTicket, esc: esc,
     checkoutSelection: checkoutSelection, invoiceSpec: invoiceSpec,
     metaFromConfig: metaFromConfig, loadConfig: loadConfig,
 
