@@ -193,6 +193,26 @@
     C.setWebDomain("acme.com");
     t("домен введён — можно", C.domainMissing(), false);
 
+    grp("лицензия заказа (/cart выбирает сразу для всех)");
+    reset();
+    C.setStyles(FLUX,["a","b"]); C.setStyles(ARCH,["x"]);
+    t("пока у всех одна — не mixed", C.orderLicense().mixed, false);
+    C.toggleLicense("web","fluxetype");
+    t("правка одной гарнитуры → mixed", C.orderLicense().mixed, true);
+    t("и чужая гарнитура не тронута", C.licenseOf("archaism").licenses, ["desktop"]);
+    C.setLicensesAll(["desktop","web"]);
+    t("применили ко всем — mixed снят", C.orderLicense().mixed, false);
+    t("обе гарнитуры под web", [C.licenseOf("fluxetype").licenses, C.licenseOf("archaism").licenses],
+      [["desktop","web"],["desktop","web"]]);
+    t("умолчание тоже выровнено", C.license().licenses, ["desktop","web"]);
+    C.setScaleAll("desktop","2-5");
+    t("тираж ушёл во все", [C.licenseOf("fluxetype").scales.desktop, C.licenseOf("archaism").scales.desktop],
+      ["2-5","2-5"]);
+    C.toggleLicenseAll("web");
+    t("toggleAll снял web у всех", [C.licenseOf("fluxetype").licenses, C.licenseOf("archaism").licenses],
+      [["desktop"],["desktop"]]);
+    t("последнюю лицензию снять нельзя", C.toggleLicenseAll("desktop").ok, false);
+
     grp("билет (deriveTicket)");
     reset();
     t("пустой заказ", C.deriveTicket({emptyText:"Nothing yet",emptyCta:"Pick"}).buyLabel, "Pick");

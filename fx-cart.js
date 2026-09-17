@@ -928,6 +928,67 @@
     write(cart, "scale");
     return { ok:true, cart:clone(cart) };
   }
+  /* ---- лицензия ЗАКАЗА -------------------------------------------------------
+     /cart выбирает лицензию сразу для ВСЕХ гарнитур: покупатель приходит туда
+     платить, а не разбираться, какой шрифт на каком праве. Хранение остаётся
+     по гарнитурам (страница шрифта правит свою и не должна задевать соседей) —
+     здесь только «применить ко всему заказу» одной записью, а не циклом правок,
+     каждая из которых дёргала бы подписчиков и перерисовывала страницу. */
+  function famSlugs(cart){
+    var seen={}, out=[];
+    cart.items.forEach(function(it){ if(!seen[it.slug]){ seen[it.slug]=1; out.push(it.slug); } });
+    return out;
+  }
+  function licSig(L){
+    var ids = arr(L.licenses).slice().sort();
+    return ids.join(",")+"|"+ids.map(function(id){ return id+":"+((L.scales&&L.scales[id])||""); }).join(",");
+  }
+  // Что показывать в контроле заказа: общая лицензия, если у всех гарнитур она
+  // одна. Разошлись (правили на страницах шрифтов) — mixed:true, и это надо
+  // сказать вслух: следующий клик здесь выровняет всех.
+  function orderLicense(cart){
+    var c = cart || read() || empty(), slugs = famSlugs(c);
+    if (!slugs.length) return { licenses:c.license.licenses.slice(), scales:clone(c.license.scales), mixed:false };
+    var first = licenseOf(slugs[0], c), key = licSig(first), mixed = false;
+    slugs.forEach(function(sg){ if (licSig(licenseOf(sg, c))!==key) mixed = true; });
+    return { licenses:arr(first.licenses).slice(), scales:clone(first.scales||{}), mixed:mixed };
+  }
+  function setLicensesAll(ids){
+    var cart = read() || empty();
+    ids = arr(ids).filter(function(id){ return !!licById(id); });
+    if (!ids.length) return { ok:false };
+    // отталкиваемся от того, что покупатель ВИДИТ в контроле
+    var base = orderLicense(cart), keep = {};
+    ids.forEach(function(id){
+      if (!SCALES[id]) return;
+      keep[id] = scaleById(id, base.scales[id]) ? base.scales[id] : defaultScaleId(id);
+    });
+    cart.license.licenses = ids.slice();
+    cart.license.scales = clone(keep);
+    famSlugs(cart).forEach(function(sg){
+      cart.byFamily[sg] = { licenses:ids.slice(), scales:clone(keep) };
+    });
+    write(cart, "license");
+    return { ok:true, cart:clone(cart) };
+  }
+  function toggleLicenseAll(id){
+    var cur = orderLicense().licenses.slice(), i = cur.indexOf(id);
+    if (i>=0){ if (cur.length<2) return { ok:false }; cur.splice(i,1); }
+    else cur.push(id);
+    return setLicensesAll(cur);
+  }
+  function setScaleAll(licId, scaleId){
+    var cart = read() || empty();
+    if (!scaleById(licId, scaleId)) return { ok:false };
+    cart.license.scales[licId] = scaleId;
+    famSlugs(cart).forEach(function(sg){
+      var L = cart.byFamily[sg] || (cart.byFamily[sg] = clone(cart.license));
+      L.scales = L.scales || {};
+      L.scales[licId] = scaleId;
+    });
+    write(cart, "scale");
+    return { ok:true, cart:clone(cart) };
+  }
   function setWebDomain(s){
     var cart = read() || empty();
     cart.license.webDomain = str(s).slice(0,200);
@@ -961,7 +1022,9 @@
     setSubfamilies: setSubfamilies, toggleSubfamily: toggleSubfamily,
     setFull: setFull, refresh: refresh,
     removeItem: removeItem, removeFamily: removeFamily, clear: clearAll,
-    setLicenses: setLicenses, toggleLicense: toggleLicense, setScale: setScale, setWebDomain: setWebDomain,
+    setLicenses: setLicenses, toggleLicense: toggleLicense,
+    orderLicense: orderLicense, setLicensesAll: setLicensesAll,
+    toggleLicenseAll: toggleLicenseAll, setScaleAll: setScaleAll, setScale: setScale, setWebDomain: setWebDomain,
 
     on: function(fn){ if (typeof fn==="function" && subs.indexOf(fn)<0) subs.push(fn); },
     off: function(fn){ subs = subs.filter(function(f){ return f!==fn; }); },
