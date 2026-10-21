@@ -845,7 +845,10 @@
       return { ok:true, cart:clone(cart) };
     }
     var it = ensure(cart, meta, "subfamily");
-    it.subs = labels;
+    // в порядке конфига (Caption, Text, Title, Display), а не кликов: иначе
+    // подпись в билете и имя блока перечисляли одно и то же по-разному
+    var order = Object.keys((meta.price && meta.price.subCuts) || {});
+    it.subs = labels.slice().sort(function(a,b){ return order.indexOf(a)-order.indexOf(b); });
     // поглощение: отдельные начертания, попавшие внутрь выбранных субсемейств
     var covered = {}, dropped = [];
     subCutsOf(it, labels).forEach(function(n){ covered[n]=1; });
@@ -1047,6 +1050,28 @@
     return { ok:true, cart:clone(cart) };
   }
 
+  /* ---- заказ по ссылке ----------------------------------------------------
+     Дизайнер собирает корзину и шлёт заказчику ссылку /cart?o=<код>; сам
+     заказ лежит в KV воркера. Наружу уходит состав и лицензии, без цен:
+     у получателя их пересчитает refresh() по свежим конфигам, при оплате —
+     воркер. Чужой заказ заменяет корзину целиком и проходит через sanitize,
+     как всё, что читается из хранилища: ссылку могли поправить руками. */
+  function exportOrder(){
+    var c = read() || empty();
+    return { v:1, license:c.license, byFamily:c.byFamily,
+             items:c.items.map(function(it){
+               return { slug:it.slug, family:it.family, product:it.product, cuts:it.cuts, subs:it.subs };
+             }) };
+  }
+  function importOrder(o){
+    var cur = read() || empty();
+    var c = sanitize({ v:1, t:Date.now(), rev:cur.rev, license:o && o.license,
+                       byFamily:o && o.byFamily, items:o && o.items });
+    if (!c || !c.items.length) return { ok:false };
+    write(c, "import");
+    return { ok:true, cart:clone(c) };
+  }
+
   /* ---- публичный API ------------------------------------------------------ */
   window.FxCart = {
     KEY: KEY, TTL: TTL,
@@ -1074,6 +1099,7 @@
     setSubfamilies: setSubfamilies, toggleSubfamily: toggleSubfamily,
     setFull: setFull, refresh: refresh,
     removeItem: removeItem, removeFamily: removeFamily, clear: clearAll,
+    exportOrder: exportOrder, importOrder: importOrder,
     setLicenses: setLicenses, toggleLicense: toggleLicense,
     orderLicense: orderLicense, setLicensesAll: setLicensesAll,
     toggleLicenseAll: toggleLicenseAll, setScaleAll: setScaleAll, setScale: setScale, setWebDomain: setWebDomain,
