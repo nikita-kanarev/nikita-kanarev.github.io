@@ -588,7 +588,7 @@
         lines.push({ name:nm, val: stale ? "—" : money(a.amount) });
         first = false;
       });
-      if (saved > 0 && !stale) lines.push({ name:"Desktop + Web bundle saves", val:"−"+money(saved), muted:true, saving:true });
+
       return { slug:slug, family:list[0].family, items:list, lines:lines,
                picked:picked.join(", "), sub:blockSub(list), total:total, stale:stale };
     });
@@ -684,10 +684,10 @@
       ? items.some(function(x){ return licenseOf(x.slug, cart).licenses.some(function(id){ var l=licById(id); return l&&l.custom; }); })
       : cart.license.licenses.some(function(id){ var l=licById(id); return l&&l.custom; });
     if(anyEnt) tlines.push({name:"Enterprise", val:"Custom", muted:true});
-    // «Вы экономите» — одним числом за весь билет (Ариели: пакет должен
-    // читаться как выгода, а не как правило расчёта)
+    // Экономия пакета — НЕ строкой в списке: «−$75» в столбике цен читается
+    // как вычитаемое, и строки переставали сходиться с Total. Отдаём числом,
+    // хозяин показывает её у итога зачёркнутой ценой без пакета (якорь).
     var saved = custom ? 0 : items.reduce(function(a, x){ return a + itemSavings(x); }, 0);
-    if(saved > 0) tlines.push({name:"Desktop + Web bundle saves", val:"−"+money(saved), muted:true, saving:true});
 
     var total=T.total||0, priceText, buyLabel, buyDisabled=false;
     if(custom){ priceText="Custom"; buyLabel="Contact us"; }
@@ -703,6 +703,7 @@
     return { items:items, rows:rs, hasCustom:custom, total:total, famCount:T.families,
              styleCount:T.styles, stale:T.stale, tlines:tlines,
              blocks: only ? [] : ticketBlocks(cart, cur), saved:saved,
+             listText: saved>0 ? (total+saved).toLocaleString("en-US") : "",
              priceText:priceText, buyLabel:buyLabel, buyDisabled:buyDisabled };
   }
 
