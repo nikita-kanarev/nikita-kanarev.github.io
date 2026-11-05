@@ -64,8 +64,8 @@
     "{S} .rcell{display:flex;flex-direction:column;gap:6px;}",
     "{S} .rcap-lab{display:none;color:var(--fx-ink);}",
     "{S} .rcap .rlabel{position:absolute;left:16px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:2;color:var(--fx-ink);transition:color .18s ease;}",
-    "{S} .rcap .rval{position:absolute;left:0;top:50%;transform:translateY(-50%);pointer-events:none;z-index:2;white-space:nowrap;color:var(--fx-ink);transition:color .18s ease;}",
-    "{S} .rcap.dragging .rlabel,{S} .rcap.dragging .rval{color:var(--fx-paper);}",
+    "{S} .rcap .rval,{S} .rcap .rval2{position:absolute;left:0;top:50%;transform:translateY(-50%);pointer-events:none;z-index:2;white-space:nowrap;color:var(--fx-ink);transition:color .18s ease;}",
+    "{S} .rcap.dragging .rlabel,{S} .rcap.dragging .rval,{S} .rcap.dragging .rval2{color:var(--fx-paper);}",
     "{S} .rcap .caret{position:absolute;left:0;top:50%;width:1px;height:26px;border-radius:1px;background:var(--fx-ink);transform:translate(-50%,-50%);pointer-events:none;z-index:2;transition:background .18s ease,width .18s ease,height .18s ease,border-radius .18s ease;}",
     "{S} .rcap .caret::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:0;height:0;background:var(--fx-paper);border-radius:1px;transition:width .18s ease,height .18s ease;}",
     "{S} .rcap.dragging .caret{background:var(--fx-rust);width:7px;height:38px;border-radius:4px;}",
@@ -144,15 +144,19 @@
       var box=document.createElement("div"); box.className="rcap";
       box.innerHTML='<input type="range" min="0" max="'+(items.length-1)+'" step="1"><div class="fill"></div>'+
         '<div class="stops">'+items.map(function(s){return '<span class="stopcap">'+esc(s.cap||s.name)+'</span>';}).join("")+'</div>'+
-        '<span class="rlabel"></span><span class="rval"></span><span class="caret"></span>';
+        '<span class="rlabel"></span><span class="rval"></span><span class="rval2"></span><span class="caret"></span>';
       var input=box.querySelector("input"),fill=box.querySelector(".fill"),
-          lblEl=box.querySelector(".rlabel"),valEl=box.querySelector(".rval"),caret=box.querySelector(".caret");
+          lblEl=box.querySelector(".rlabel"),valEl=box.querySelector(".rval"),val2El=box.querySelector(".rval2"),caret=box.querySelector(".caret");
       var stops=box.querySelectorAll(".stopcap");
       lblEl.textContent=license.name+" · "+def.unit; input.value=idx;
       function reflow(){
-        var v=+input.value,n=items.length;
-        // ступень с именем (Solo, Studio…) читается как статус, а не как счёт кресел
-        valEl.textContent=items[v].tier ? items[v].tier+" · "+items[v].name : items[v].name;
+        var v=+input.value,n=items.length, it=items[v];
+        // Ступень с именем (Solo, Studio…) читается как статус, а не как счёт
+        // кресел: имя — слева от каретки, тираж — справа («Solo │ 1 user»).
+        // Справа места может не хватить (последние стопы у правого края) —
+        // тогда обе части уходят влево одной строкой.
+        valEl.textContent=it.tier ? it.tier : it.name;
+        val2El.textContent=it.tier ? it.name : "";
         var w=box.clientWidth;if(!w)return;
         var edge=3,half=3.5,thumbW=7,labelEnd=16+lblEl.offsetWidth,insetL=labelEnd+12+64;
         // нативный range прижимаем к видимой дорожке, чтобы значение совпадало с курсором
@@ -161,6 +165,12 @@
         function xOf(i){ return insetL+thumbW/2+(n>1?i/(n-1):0)*(inputW-thumbW); }
         var caretX=xOf(v);
         caret.style.left=caretX+"px";fill.style.width=Math.max(0,caretX+half-edge)+"px";
+        val2El.style.display="";
+        if(it.tier && caretX+12+val2El.offsetWidth > w-edge-10){
+          valEl.textContent=it.tier+" · "+it.name; val2El.style.display="none";
+        } else if(it.tier){
+          val2El.style.left=(caretX+12)+"px";
+        }
         valEl.style.left=Math.max(labelEnd+12,caretX-12-valEl.offsetWidth)+"px";
         for(var i=0;i<stops.length;i++){
           var cw=(stops[i].offsetWidth||24)/2;                       // подписи не должны вылезать из капсулы
