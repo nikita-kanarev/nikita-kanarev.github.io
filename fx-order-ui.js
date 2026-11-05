@@ -150,7 +150,9 @@
       var stops=box.querySelectorAll(".stopcap");
       lblEl.textContent=license.name+" · "+def.unit; input.value=idx;
       function reflow(){
-        var v=+input.value,n=items.length; valEl.textContent=items[v].name;
+        var v=+input.value,n=items.length;
+        // ступень с именем (Solo, Studio…) читается как статус, а не как счёт кресел
+        valEl.textContent=items[v].tier ? items[v].tier+" · "+items[v].name : items[v].name;
         var w=box.clientWidth;if(!w)return;
         var edge=3,half=3.5,thumbW=7,labelEnd=16+lblEl.offsetWidth,insetL=labelEnd+12+64;
         // нативный range прижимаем к видимой дорожке, чтобы значение совпадало с курсором

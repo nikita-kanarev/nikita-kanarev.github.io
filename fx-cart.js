@@ -32,12 +32,12 @@
   ЛИЦЕНЗИЯ — УРОВЕНЬ ЗАКАЗА, не позиции. Usage, reach и webDomain описывают
   покупателя, а не гарнитуру: «desktop, 2–5 человек, домен такой-то» не бывает
   разным для Fluxetype и Archaism в одном чеке. Отсюда цена:
-      base(позиция) × Σ(licMult × scaleMult)
-  позиционная база × общий множитель заказа.
+      base(позиция) × Σ(множители лицензий с учётом пакета Desktop+Web)
+  позиционная база × общий множитель заказа (правило пакета — usageMults).
 
   ОКРУГЛЕНИЕ — ПО ВОРКЕРУ. Источник истины о цене — computePrice в worker.js:
   ОДНО округление в конце, над суммой множителей заказа:
-      round( base(позиция) × Σ(licMult × scaleMult) )
+      round( base(позиция) × Σ(множители после usageMults) )
   Старый билдер округлял иначе — построчно по каждому usage (Σ round(...)) —
   отсюда известное расхождение в $1–2. Расходился билдер, не воркер, поэтому
   подвинут билдер: деньги берёт сервер, и спорить с ним фронту нечем.
@@ -47,12 +47,9 @@
   usage методом наибольшего остатка — суммы строк сходятся с итогом в точности,
   а не «почти». Отображаемая разбивка — производная от цены, а не наоборот.
 
-  ⚠️ Множители LICENSES/SCALES здесь совпадают с LICENSE_MULT/SCALE_MULT в
-  worker.js один в один. Это одна таблица в двух местах — правится парой.
-  ⚠️ У субсемейства воркер берёт SUBFAMILY_CUT_COUNT(21) × число субсемейств,
-  здесь — фактическую длину price.subCuts. Для Fluxetype это одно и то же
-  число; когда воркер станет знать про несколько гарнитур, константу 21 надо
-  заменить фактическим счётом, а не наоборот.
+  ⚠️ Множители LICENSES/SCALES/LEGACY_SCALE и функция usageMults здесь
+  совпадают с LICENSE_MULT/SCALE_MULT/LEGACY_SCALE/usageMults в worker.js один
+  в один. Это одна таблица в двух местах — правится парой (см. PRICING.md).
 
   СЛЕПОК ЦЕН В ПОЗИЦИИ (item.price). Числа (singleBase/singleExponent/fullBase/
   currency) живут в <slug>.json и в Custom attributes эмбеда. Бейдж стоит на
@@ -90,19 +87,24 @@
      Переехали сюда из embed-license-builder как есть. Менять только вместе с
      LICENSE_MULT / SCALE_MULT в worker.js — они одна таблица в двух местах. */
   var LICENSES = [
-    { id:"desktop", name:"Desktop",     mult:1.0, desc:"Print · artwork · documents<br>Priced by seats" },
-    { id:"web",     name:"Web",         mult:1.2, desc:"@font-face embedding<br>Priced by pageviews" },
+    { id:"desktop", name:"Desktop",     mult:1.0, desc:"Print · artwork · documents<br>Small website (≤30K views) included" },
+    { id:"web",     name:"Web",         mult:1.2, desc:"@font-face embedding<br>Desktop seats included" },
     { id:"app",     name:"App / eBook", mult:1.5, desc:"Embedded in software<br>Priced by installs" },
     { id:"broad",   name:"Broadcast",   mult:1.8, desc:"Film · TV · streaming<br>Priced by reach" },
     { id:"ent",     name:"Enterprise",  mult:0, custom:true }
   ];
+  /* Шкалы v2 (2026-11-05, см. PRICING.md). Desktop сглажен под медиану рынка;
+     Web — те же цены на втрое больший трафик (считаем просмотры, а рынок —
+     уникальных посетителей). tier — имя ступени для витрины.
+     ⚠️ Порядок items значим: правило пакета (usageMults) сопоставляет
+     ступени Desktop и Web по ИНДЕКСУ. */
   var SCALES = {
     desktop:{ unit:"Users", items:[
-      {id:"1",name:"1 user",cap:"1",mult:1.0},{id:"2-5",name:"2–5 users",cap:"2–5",mult:2.5},{id:"6-10",name:"6–10 users",cap:"6–10",mult:4.0},
-      {id:"11-25",name:"11–25 users",cap:"11–25",mult:7.0},{id:"26-50",name:"26–50 users",cap:"26–50",mult:11.0},{id:"50+",name:"50+ users",cap:"50+",mult:0,custom:true}] },
+      {id:"1",name:"1 user",cap:"1",tier:"Solo",mult:1.0},{id:"2-5",name:"2–5 users",cap:"2–5",tier:"Studio",mult:1.5},{id:"6-10",name:"6–10 users",cap:"6–10",tier:"Team",mult:2.5},
+      {id:"11-25",name:"11–25 users",cap:"11–25",tier:"Company",mult:4.0},{id:"26-50",name:"26–50 users",cap:"26–50",tier:"Organisation",mult:6.0},{id:"50+",name:"50+ users",cap:"50+",tier:"Enterprise",mult:0,custom:true}] },
     web:{ unit:"Pageviews / month", items:[
-      {id:"10k",name:"≤10K",cap:"≤10K",mult:1.0},{id:"100k",name:"≤100K",cap:"≤100K",mult:2.0},{id:"500k",name:"≤500K",cap:"≤500K",mult:3.5},
-      {id:"1m",name:"≤1M",cap:"≤1M",mult:5.0},{id:"5m",name:"≤5M",cap:"≤5M",mult:8.0},{id:"5m+",name:"5M+",cap:"5M+",mult:0,custom:true}] },
+      {id:"30k",name:"≤30K",cap:"≤30K",mult:1.0},{id:"300k",name:"≤300K",cap:"≤300K",mult:2.0},{id:"1.5m",name:"≤1.5M",cap:"≤1.5M",mult:3.5},
+      {id:"3m",name:"≤3M",cap:"≤3M",mult:5.0},{id:"15m",name:"≤15M",cap:"≤15M",mult:8.0},{id:"15m+",name:"15M+",cap:"15M+",mult:0,custom:true}] },
     app:{ unit:"Installs or copies", items:[
       {id:"1k",name:"≤1K",cap:"≤1K",mult:1.0},{id:"10k",name:"≤10K",cap:"≤10K",mult:2.5},{id:"100k",name:"≤100K",cap:"≤100K",mult:5.0},
       {id:"1m",name:"≤1M",cap:"≤1M",mult:10.0},{id:"1m+",name:"1M+",cap:"1M+",mult:0,custom:true}] },
@@ -115,9 +117,19 @@
   var FORMAT_ORDER = ["Variable","OTF","TTF","WOFF2"];
   var PRODUCTS = ["single","subfamily","full"];
 
+  /* Старые id ступеней Web (до 2026-11-05) → новые. Корзина живёт 14 дней, и в
+     ней лежат «10k»/«100k»: без перевода sanitize молча сбросил бы их на нижнюю
+     ступень. Ступень переезжает на ту же позицию шкалы — цена та же, трафика
+     больше. Та же таблица есть в worker.js (LEGACY_SCALE). */
+  var LEGACY_SCALE = { web:{ "10k":"30k", "100k":"300k", "500k":"1.5m", "1m":"3m", "5m":"15m", "5m+":"15m+" } };
+  function canonScale(licId, sid){
+    var m = LEGACY_SCALE[licId];
+    return m && Object.prototype.hasOwnProperty.call(m, sid) ? m[sid] : sid;
+  }
   function licById(id){ for(var i=0;i<LICENSES.length;i++) if(LICENSES[i].id===id) return LICENSES[i]; return null; }
   function scaleById(licId, sid){
     var def=SCALES[licId]; if(!def) return null;
+    sid = canonScale(licId, sid);
     for(var i=0;i<def.items.length;i++) if(def.items[i].id===sid) return def.items[i];
     return null;
   }
@@ -184,7 +196,7 @@
       ids.forEach(function(id){
         if (!SCALES[id]) return;
         var want = o.scales && o.scales[id];
-        sc[id] = scaleById(id, want) ? want : defaultScaleId(id);
+        sc[id] = scaleById(id, want) ? scaleById(id, want).id : defaultScaleId(id);
       });
       return { licenses:ids, scales:sc };
     }
@@ -294,7 +306,7 @@
           ids.forEach(function(id){
             if (!SCALES[id]) return;
             var want = d.scales && d.scales[id];
-            cart.license.scales[id] = scaleById(id, want) ? want : defaultScaleId(id);
+            cart.license.scales[id] = scaleById(id, want) ? scaleById(id, want).id : defaultScaleId(id);
           });
         }
         if (typeof d.webDomain==="string") cart.license.webDomain = d.webDomain.slice(0,200);
@@ -322,13 +334,14 @@
   }
 
   /* ---- цена ---------------------------------------------------------------
-     base(позиция) × Σ(licMult × scaleMult), округление на уровне позиция×usage.
+     base(позиция) × Σ(множители лицензий с учётом пакета, см. usageMults),
+     одно округление на позицию.
      Кривая объёма — та же, что была в derive():
        single    → singleBase × cutCount^exp
        subfamily → singleBase × (Σ начертаний выбранных субсемейств)^exp
        full      → fullBase, а если его нет — кривая по всей семье
-     Ровно это считает worker.js (SINGLE_BASE 50 / FULL_BASE 1380 /
-     SINGLE_EXPONENT 0.75) — здесь мы его повторяем, а не задаём. */
+     Ровно это считает computePrice() в worker.js — здесь мы его повторяем,
+     а не задаём. Числа гарнитуры — в <slug>.json и в таблице FONTS воркера. */
   /* Чья лицензия действует. Передали объект — считаем по нему; передали slug
      (или позицию) — берём лицензию этой гарнитуры; ничего — значение по
      умолчанию. Одна точка входа, чтобы «по какой лицензии считаем» не
@@ -365,16 +378,42 @@
     var n = item.product==="subfamily" ? subCutsOf(item, item.subs).length : item.cuts.length;
     return sb * Math.pow(Math.max(1, n), exp);
   }
-  // Σ множителей заказа. Custom-строки (Enterprise, верхний стоп шкалы) в сумму
-  // не входят: воркер на них вообще отказывается считать и уводит в запрос цены.
-  function licenseSum(license){
-    var rs = rows(license), sum = 0;
-    for (var i=0;i<rs.length;i++){
-      var r = rs[i];
-      if (r.license.custom || !r.scale || r.scale.custom) continue;
-      sum += r.license.mult * r.scale.mult;
+  /* Множитель каждой строки лицензии С УЧЁТОМ ПАКЕТА (v2, 2026-11-05).
+     Обычно строки складываются: Σ(licMult × scaleMult). Исключение — пара
+     Desktop + Web, приманка по образцу The Economist:
+       · Web на нижней ступени (≤30K) входит в Desktop бесплатно;
+       · иначе Desktop входит в Web бесплатно до ТОЙ ЖЕ ступени (по индексу
+         шкалы), сверх неё доплачивается только разница.
+     Так «Web» и «Desktop + Web» одной ступени стоят одинаково, и отдельный Web
+     становится приманкой. App и Broadcast по-прежнему прибавляются.
+     list — множитель без пакета (для строки «вы экономите»).
+     Custom-строки (Enterprise, верхний стоп шкалы) — 0: воркер на них цену не
+     считает и уводит в запрос. ⚠️ Зеркало — usageMults() в worker.js. */
+  function priced(r){ return !(r.license.custom || !r.scale || r.scale.custom); }
+  function tierIdx(licId, sc){ return SCALES[licId] ? SCALES[licId].items.indexOf(sc) : -1; }
+  function usageMults(rs){
+    var out = rs.map(function(r){
+      var m = priced(r) ? r.license.mult * r.scale.mult : 0;
+      return { custom: !priced(r), list: m, mult: m, included: null };
+    });
+    var di = -1, wi = -1;
+    rs.forEach(function(r, i){ if (r.license.id==="desktop") di = i; if (r.license.id==="web") wi = i; });
+    if (di>=0 && wi>=0 && !out[di].custom && !out[wi].custom){
+      var w = tierIdx("web", rs[wi].scale);
+      if (w === 0){ out[wi].mult = 0; out[wi].included = "desktop"; }
+      else {
+        var cover = licById("desktop").mult * SCALES.desktop.items[w].mult;
+        out[di].mult = Math.max(0, out[di].list - cover);
+        if (!out[di].mult) out[di].included = "web";
+      }
     }
-    return sum;
+    return out;
+  }
+  function licenseSum(license){
+    return usageMults(rows(license)).reduce(function(a, u){ return a + u.mult; }, 0);
+  }
+  function listSum(license){
+    return usageMults(rows(license)).reduce(function(a, u){ return a + u.list; }, 0);
   }
   // license не передан → берём лицензию ГАРНИТУРЫ этой позиции
   function itemPrice(item, license){
@@ -390,20 +429,28 @@
     var L = license || (item && item.slug);
     var total = itemPrice(item, L);
     if (total==null) return null;
-    var base = itemBase(item), rs = rows(L), out = [], sum = 0;
-    rs.forEach(function(r){
-      var custom = r.license.custom || !r.scale || r.scale.custom;
-      var exact = custom ? 0 : base * r.license.mult * r.scale.mult;
-      var floor = custom ? 0 : Math.floor(exact);
+    var base = itemBase(item), rs = rows(L), us = usageMults(rs), out = [], sum = 0;
+    rs.forEach(function(r, i){
+      var u = us[i];
+      var exact = u.custom ? 0 : base * u.mult;
+      var floor = u.custom ? 0 : Math.floor(exact);
       sum += floor;
-      out.push({ license:r.license, scale:r.scale, unit:r.unit, custom:custom,
-                 exact:exact, amount:floor, rest: custom ? -1 : exact - floor });
+      out.push({ license:r.license, scale:r.scale, unit:r.unit, custom:u.custom,
+                 included:u.included, list:u.custom ? 0 : Math.round(base * u.list),
+                 exact:exact, amount:floor, rest: u.custom ? -1 : exact - floor });
     });
     var left = total - sum;
     out.slice().sort(function(a,b){ return b.rest - a.rest; }).forEach(function(l){
       if (left > 0 && !l.custom){ l.amount += 1; left -= 1; }
     });
     return out;
+  }
+  // Сколько пакет сэкономил на позиции: цена без пакета минус цена с ним.
+  // Для строки «вы экономите» — одно число, а не разбор правил.
+  function itemSavings(item, license){
+    var L = license || (item && item.slug), base = itemBase(item);
+    if (base==null) return 0;
+    return Math.max(0, Math.round(base * listSum(L)) - itemPrice(item, L));
   }
   // Каждая позиция считается по лицензии СВОЕЙ гарнитуры. custom — если хотя бы
   // одна гарнитура ушла в Enterprise или верхний стоп шкалы: считать заказ
@@ -524,18 +571,24 @@
       // суммы по usage: складываем разбивки позиций по индексу строки
       var agg = rs.map(function(r){
         return { license:r.license, scale:r.scale,
-                 custom: r.license.custom || !r.scale || r.scale.custom, amount:0 };
+                 custom: r.license.custom || !r.scale || r.scale.custom, amount:0, included:null };
       });
+      var saved = 0;
       list.forEach(function(it){
-        (itemLines(it, L)||[]).forEach(function(l, i){ if (agg[i] && !l.custom) agg[i].amount += l.amount; });
+        (itemLines(it, L)||[]).forEach(function(l, i){
+          if (agg[i] && !l.custom){ agg[i].amount += l.amount; if (l.included) agg[i].included = l.included; }
+        });
+        saved += itemSavings(it, L);
       });
       var first = true;
       agg.forEach(function(a){
         var nm = a.license.name + (a.scale ? " · "+a.scale.name : "");
         if (a.custom){ lines.push({ name:nm, val:"Custom", muted:true }); return; }
+        if (a.included && !a.amount && !stale){ lines.push({ name:nm, val:"Included", muted:true }); return; }
         lines.push({ name:nm, val: stale ? "—" : money(a.amount) });
         first = false;
       });
+      if (saved > 0 && !stale) lines.push({ name:"Desktop + Web bundle saves", val:"−"+money(saved), muted:true, saving:true });
       return { slug:slug, family:list[0].family, items:list, lines:lines,
                picked:picked.join(", "), sub:blockSub(list), total:total, stale:stale };
     });
@@ -588,6 +641,8 @@
       (itemLines(it)||[]).forEach(function(l){
         var nm=l.license.name+(l.scale?" · "+l.scale.name:"");
         if(l.custom){ tlines.push({name:nm, val:"Custom", muted:true}); return; }
+        // строка, целиком покрытая пакетом, — «Included», а не «+ $0»
+        if(l.included && !l.amount){ tlines.push({name:nm, val:"Included", muted:true}); return; }
         tlines.push({name:nm, val:(first?"":"+ ")+money(l.amount)});
         first=false;
       });
@@ -629,6 +684,10 @@
       ? items.some(function(x){ return licenseOf(x.slug, cart).licenses.some(function(id){ var l=licById(id); return l&&l.custom; }); })
       : cart.license.licenses.some(function(id){ var l=licById(id); return l&&l.custom; });
     if(anyEnt) tlines.push({name:"Enterprise", val:"Custom", muted:true});
+    // «Вы экономите» — одним числом за весь билет (Ариели: пакет должен
+    // читаться как выгода, а не как правило расчёта)
+    var saved = custom ? 0 : items.reduce(function(a, x){ return a + itemSavings(x); }, 0);
+    if(saved > 0) tlines.push({name:"Desktop + Web bundle saves", val:"−"+money(saved), muted:true, saving:true});
 
     var total=T.total||0, priceText, buyLabel, buyDisabled=false;
     if(custom){ priceText="Custom"; buyLabel="Contact us"; }
@@ -643,7 +702,7 @@
 
     return { items:items, rows:rs, hasCustom:custom, total:total, famCount:T.families,
              styleCount:T.styles, stale:T.stale, tlines:tlines,
-             blocks: only ? [] : ticketBlocks(cart, cur),
+             blocks: only ? [] : ticketBlocks(cart, cur), saved:saved,
              priceText:priceText, buyLabel:buyLabel, buyDisabled:buyDisabled };
   }
 
@@ -959,7 +1018,7 @@
     var keep = {};
     ids.forEach(function(id){
       if (!SCALES[id]) return;
-      keep[id] = scaleById(id, L.scales[id]) ? L.scales[id] : defaultScaleId(id);
+      keep[id] = scaleById(id, L.scales[id]) ? scaleById(id, L.scales[id]).id : defaultScaleId(id);
     });
     L.scales = keep;
     if (slug){ cart.license.licenses = ids.slice(); cart.license.scales = JSON.parse(JSON.stringify(keep)); }
@@ -976,6 +1035,7 @@
   function setScale(licId, scaleId, slug){
     var cart = read() || empty();
     if (!scaleById(licId, scaleId)) return { ok:false };
+    scaleId = scaleById(licId, scaleId).id;
     var L = targetLic(cart, slug);
     L.scales[licId] = scaleId;
     if (slug) cart.license.scales[licId] = scaleId;
@@ -1015,7 +1075,7 @@
     var base = orderLicense(cart), keep = {};
     ids.forEach(function(id){
       if (!SCALES[id]) return;
-      keep[id] = scaleById(id, base.scales[id]) ? base.scales[id] : defaultScaleId(id);
+      keep[id] = scaleById(id, base.scales[id]) ? scaleById(id, base.scales[id]).id : defaultScaleId(id);
     });
     cart.license.licenses = ids.slice();
     cart.license.scales = clone(keep);
@@ -1034,6 +1094,7 @@
   function setScaleAll(licId, scaleId){
     var cart = read() || empty();
     if (!scaleById(licId, scaleId)) return { ok:false };
+    scaleId = scaleById(licId, scaleId).id;
     cart.license.scales[licId] = scaleId;
     famSlugs(cart).forEach(function(sg){
       var L = cart.byFamily[sg] || (cart.byFamily[sg] = clone(cart.license));
@@ -1088,7 +1149,8 @@
     subCutsOf: subCutsOf,
 
     rows: rows, isCustom: isCustom, licenseSum: licenseSum, licenseOf: licenseOf,
-    itemBase: itemBase, itemPrice: itemPrice, itemLines: itemLines, totals: totals,
+    itemBase: itemBase, itemPrice: itemPrice, itemLines: itemLines, itemSavings: itemSavings, totals: totals,
+    usageMults: function(license){ return usageMults(rows(license)); }, canonScale: canonScale,
     normDomain: normDomain, validDomain: validDomain, webPicked: webPicked, domainMissing: domainMissing,
     itemLabel: itemLabel, pickedText: pickedText, ticketBlocks: ticketBlocks,
     deriveTicket: deriveTicket, esc: esc,
