@@ -38,7 +38,13 @@
     function vset(inst){
       if(!inst) return "";
       return axes.map(function(a){
-        var v=inst[a.tag]!==undefined?inst[a.tag]:a.default; return "'"+a.tag+"' "+v;
+        var v=inst[a.tag]!==undefined?inst[a.tag]:a.default;
+        // Safari выбрасывает значение, РАВНОЕ дефолту шрифта, и ставит opsz по
+        // кеглю (font-optical-sizing:none не всегда спасает): Polytype Text
+        // Regular (wght 400 / opsz 10 = дефолт) рисовался как Display. Сдвиг на
+        // 0.01 глазу не виден, а отбрасывать браузеру становится нечего.
+        if(v===a.default) v = (a.max!==undefined && v>=a.max) ? v-0.01 : v+0.01;
+        return "'"+a.tag+"' "+v;
       }).join(", ");
     }
 
