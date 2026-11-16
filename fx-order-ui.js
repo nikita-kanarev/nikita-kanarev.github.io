@@ -267,6 +267,34 @@
     if(L.hasVariants){
       if(T.subfamilies && o.sections!==false){
         var subOrder = o.subOrder || T.subfamilies;
+        /* Несколько субсемейств — таблица как у Polytype: колонка на
+           субсемейство (порядок subOrder — своё ведущее), строка на вес,
+           в ячейке ПОЛНОЕ имя «Fluxetype Caption Thin». Вкладки
+           (variantAxis) по-прежнему выбирают, какой вариант стоит в ячейке.
+           Каждое субсемейство — свой столбик (.subcol), столбики лежат в
+           .subcols: 4 в ряд → 2×2 → 1×4 по ширине самой сетки (container
+           query в CSS эмбеда), поэтому и в узком ящике корзины тоже. */
+        if(subOrder.length>1){
+          // столбики — в порядке конфига (Caption, Text, Title, Display), а не
+          // «своё субсемейство первым», как в subOrder: таблица читается по оси
+          var slugs = subOrder.map(function(sf){ return sf.slug; });
+          subOrder = T.subfamilies.filter(function(sf){ return slugs.indexOf(sf.slug)>=0; });
+          var per = subOrder.map(function(sf){ return T.layoutFor(T.instancesOfSub(sf.slug), sf.slug); });
+          var rowKeys = [];
+          per.forEach(function(Ls){ Ls.groups.forEach(function(g){ if(rowKeys.indexOf(g.name)<0) rowKeys.push(g.name); }); });
+          var htmlT = tabsShown.map(function(t){
+            return (expand?'<div class="cs-sub">'+esc2(t)+'</div>':'')+'<div class="subcols">'+per.map(function(Ls, i){
+              return '<div class="subcol">'+rowKeys.map(function(rk){
+                var g = Ls.groupByName[rk];
+                var v = g && g.variants.filter(function(x){ return x.label===t; })[0];
+                // без слова вкладки: оно уже нажато над сеткой, а с ним имя не
+                // влезает в четверть ширины
+                return v ? cell(v.inst, T.family+" "+subOrder[i].label+" "+rk) : '<div class="cell empty"></div>';
+              }).join("")+'</div>';
+            }).join("")+'</div>';
+          }).join("");
+          return {html:htmlT, display:"block", cols:"", wide:true};
+        }
         var html = subOrder.map(function(sf){
           var Ls = T.layoutFor(T.instancesOfSub(sf.slug), sf.slug);
           // в развёрнутом виде у секции столько строк, сколько вкладок, и каждая
