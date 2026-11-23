@@ -129,6 +129,12 @@
     });
 
     function tick(t) {
+      // меню шрифтов (fx-menu.js) открыто — галерея стоит; время паузы не копится в idle
+      if (document.documentElement.hasAttribute('data-fx-paused')) {
+        last = t;
+        requestAnimationFrame(tick);
+        return;
+      }
       if (last !== null) {
         var dt = Math.min((t - last) / 1000, 0.1);
         if (!(drag && moved)) {
