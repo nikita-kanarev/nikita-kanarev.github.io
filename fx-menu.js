@@ -46,9 +46,13 @@
 
   var CSS = [
     ".fxm-src .w-dropdown-list{display:none!important}",
-    ".fxm-veil{position:fixed;left:0;right:0;bottom:0;top:var(--fxm-top,0px);z-index:990;background:var(--fx-menu-dim,rgba(0,0,0,.25));",
+    /* the veil covers the WHOLE window (whatever shows beside a narrower header blurs too);
+       the header is lifted above it while the menu is open, so it stays sharp */
+    ".fxm-veil{position:fixed;inset:0;z-index:990;background:var(--fx-menu-dim,rgba(0,0,0,.25));",
     "  -webkit-backdrop-filter:blur(var(--fx-menu-blur,14px));backdrop-filter:blur(var(--fx-menu-blur,14px));opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s}",
     "html.fxm-open .fxm-veil{opacity:1;visibility:visible;transition:opacity .25s}",
+    "html.fxm-open .fxm-hdr{z-index:995!important}",
+    "html.fxm-open .fxm-hdr.fxm-pos{position:relative}",
     ".fxm{position:fixed;left:0;right:0;top:var(--fxm-top,0px);z-index:991;max-height:calc(100vh - var(--fxm-top,0px));overflow:auto;overscroll-behavior:contain;",
     "  padding:20px;box-sizing:border-box;opacity:0;visibility:hidden;transform:translateY(-8px);",
     "  transition:opacity .2s,transform .3s cubic-bezier(.2,.7,.2,1),visibility 0s .3s}",
@@ -283,11 +287,9 @@
 
   /* ---------- open / close ---------- */
   function isOpen() { return HTML.classList.contains("fxm-open"); }
-  function topEdge() {
-    var hdr = dropdown.closest("[data-wf--header--variant], header, nav, .w-nav") || dropdown;
-    return Math.max(0, Math.round(hdr.getBoundingClientRect().bottom));
-  }
-  function place() { HTML.style.setProperty("--fxm-top", topEdge() + "px"); layout(); sizeTiles(); }   // .fxm and .fxm-veil inherit --fxm-top
+  var hdr;
+  function topEdge() { return Math.max(0, Math.round(hdr.getBoundingClientRect().bottom)); }
+  function place() { HTML.style.setProperty("--fxm-top", topEdge() + "px"); layout(); sizeTiles(); }   // .fxm inherits --fxm-top
   function open() {
     clearTimeout(closeT);
     if (isOpen()) return;
@@ -312,6 +314,9 @@
     if (!items.length) return;
     var st = el("style"); st.id = "fx-menu-css"; st.textContent = CSS; document.head.appendChild(st);
     dropdown.classList.add("fxm-src");
+    hdr = dropdown.closest("[data-wf--header--variant], header, nav, .w-nav") || dropdown;
+    hdr.classList.add("fxm-hdr");
+    if (getComputedStyle(hdr).position === "static") hdr.classList.add("fxm-pos");   // z-index needs a positioned box
     veil = el("div", "fxm-veil"); menu = el("nav", "fxm"); menu.setAttribute("aria-label", "Typefaces");
     colsBox = menu.appendChild(el("div", "fxm-cols"));
     document.body.appendChild(veil); document.body.appendChild(menu);
