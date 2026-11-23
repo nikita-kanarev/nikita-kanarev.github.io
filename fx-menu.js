@@ -248,21 +248,20 @@
   }
   function closeTile(tile) { tile.classList.remove("open"); setTitle(tile.__it, false); }
   function setTitle(it, bold) { if (it.cfg) it.t.style.fontVariationSettings = axesVS(it.cfg.axes, bold ? titleOver(it.cfg.axes) : null); }
-  /* nothing above the cursor changes height unless it must: hovering closes the tiles BELOW
-     in the same column and everything in other columns; at most 2 cards open per column
-     (the oldest above closes) */
+  /* open in a column: the tile under the cursor + the one the cursor came from (same column),
+     in either direction — down: it and the one above; up: it and the one below. Everything
+     else in the column and in other columns closes. */
   function hoverTile(tile) {
-    var stack = tile.closest(".fxm-stack"), mine = [].slice.call(stack.querySelectorAll(".fxm-tile")), i = mine.indexOf(tile);
+    var stack = tile.closest(".fxm-stack"), prev = stack.__last;
     clearTimeout(stack.__t);
-    mine.forEach(function (t, j) { if (j > i && t.classList.contains("open")) closeTile(t); });
-    var above = mine.filter(function (t, j) { return j < i && t.classList.contains("open"); });
-    while (above.length > 1) closeTile(above.shift());
-    [].forEach.call(colsBox.querySelectorAll(".fxm-stack"), function (st) { if (st !== stack) [].forEach.call(st.querySelectorAll(".fxm-tile.open"), closeTile); });
+    [].forEach.call(stack.querySelectorAll(".fxm-tile.open"), function (t) { if (t !== tile && t !== prev) closeTile(t); });
+    [].forEach.call(colsBox.querySelectorAll(".fxm-stack"), function (st) { if (st !== stack) { st.__last = null; [].forEach.call(st.querySelectorAll(".fxm-tile.open"), closeTile); } });
     if (!tile.classList.contains("open")) openTile(tile);
+    stack.__last = tile;
   }
   function bindStack(st) {
     st.addEventListener("mouseenter", function () { clearTimeout(st.__t); });
-    st.addEventListener("mouseleave", function () { st.__t = setTimeout(function () { [].forEach.call(st.querySelectorAll(".fxm-tile.open"), closeTile); }, 250); });
+    st.addEventListener("mouseleave", function () { st.__t = setTimeout(function () { st.__last = null; [].forEach.call(st.querySelectorAll(".fxm-tile.open"), closeTile); }, 250); });
   }
 
   /* ---------- pause everything else on the page ---------- */
