@@ -63,14 +63,17 @@
     ".fxm-fam{display:flex;flex-direction:column;gap:6px}",
     ".fxm-card{display:flex;flex-direction:column;position:relative;height:var(--h,52px);overflow:hidden;border-radius:4px;",
     "  background:var(--fx-menu-tile,#f2f1ec);color:var(--fx-menu-ink,#1a1a1a);text-decoration:none;",
-    "  transition:height .45s cubic-bezier(.2,.75,.15,1),border-radius .3s,background-color .25s,color .25s}",
+    "  transition:height .45s cubic-bezier(.2,.75,.15,1),background-color .25s,color .25s}",
     ".fxm-card:hover,.fxm-card:focus{color:var(--fx-menu-ink,#1a1a1a);text-decoration:none}",
     ".fxm-t{display:block;flex:none;line-height:1;padding:.32em .4em .38em;white-space:nowrap;overflow:hidden;font-size:clamp(28px,3vw,46px);font-weight:400;transition:font-variation-settings .45s}",
     ".fxm-bd{flex:none;display:flex;flex-direction:column;padding:0 .9em .9em calc(.4 * clamp(28px,3vw,46px));opacity:0;transition:opacity .2s}",
     ".fxm-st{display:grid;grid-auto-flow:column;column-gap:30px;align-content:start;justify-content:start;overflow:hidden}",
     ".fxm-st span{line-height:1.02;white-space:nowrap}",
     ".fxm-ft{font-size:12px;line-height:1.3;opacity:.75;margin-top:10px}",
-    ".fxm-tile.open .fxm-card,.fxm-tile.open .fxm-card:hover{height:var(--H,auto);border-radius:12px;background:var(--c,#333);color:#fff}",
+    /* open = expanded; .on = the one under the cursor, in its colour. The other open card (the
+       one the cursor came from) stays expanded in the resting tile colours */
+    ".fxm-tile.open .fxm-card,.fxm-tile.open .fxm-card:hover{height:var(--H,auto)}",
+    ".fxm-tile.open.on .fxm-card,.fxm-tile.open.on .fxm-card:hover{background:var(--c,#333);color:#fff}",
     ".fxm-tile.open .fxm-bd{opacity:1;transition:opacity .3s .15s}",
     "@media (prefers-reduced-motion:reduce){.fxm,.fxm-veil,.fxm-card,.fxm-bd,.fxm-t{transition:none!important}}"
   ].join("\n");
@@ -246,7 +249,7 @@
     tile.style.setProperty("--H", H + "px");
     tile.classList.add("open");
   }
-  function closeTile(tile) { tile.classList.remove("open"); setTitle(tile.__it, false); }
+  function closeTile(tile) { tile.classList.remove("open", "on"); setTitle(tile.__it, false); }
   function setTitle(it, bold) { if (it.cfg) it.t.style.fontVariationSettings = axesVS(it.cfg.axes, bold ? titleOver(it.cfg.axes) : null); }
   /* open in a column: the tile under the cursor + the one the cursor came from (same column),
      in either direction — down: it and the one above; up: it and the one below. Everything
@@ -257,6 +260,8 @@
     [].forEach.call(stack.querySelectorAll(".fxm-tile.open"), function (t) { if (t !== tile && t !== prev) closeTile(t); });
     [].forEach.call(colsBox.querySelectorAll(".fxm-stack"), function (st) { if (st !== stack) { st.__last = null; [].forEach.call(st.querySelectorAll(".fxm-tile.open"), closeTile); } });
     if (!tile.classList.contains("open")) openTile(tile);
+    [].forEach.call(colsBox.querySelectorAll(".fxm-tile.on"), function (t) { t.classList.remove("on"); });
+    tile.classList.add("on");
     stack.__last = tile;
   }
   function bindStack(st) {
