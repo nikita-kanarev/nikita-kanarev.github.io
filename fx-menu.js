@@ -9,8 +9,9 @@
 
   ИСТОЧНИКИ ДАННЫХ. Порядок и названия — из CMS-списка дропдауна (новый шрифт
   попадает в меню сам после Publish; порядок = порядок в CMS). Шрифт, оси,
-  начертания — <slug>.json на хосте (data-fx-base). Цвет — Custom attribute
-  data-color на ссылке элемента списка, привязанный к полю Color (запросов ноль).
+  начертания — <slug>.json на хосте (data-fx-base). Цвет — у ссылки элемента
+  списка Dynamic style settings → Get Border Color from Typefaces → Color
+  (или атрибут data-color); запросов ноль.
   Без атрибута — фон страницы /typefaces/<slug> (~60 KB на шрифт), тот же кеш
   sessionStorage "fx-tile2:<href>", что у плиток главной (fx-index.js).
   Семейства группируются по первому слову названия: «Polytype Display» и
@@ -164,8 +165,11 @@
       var href = a.getAttribute("href"), m = href.match(/\/typefaces\/([^\/?#]+)/);
       if (!m || seen[m[1]]) return null; seen[m[1]] = 1;
       var name = (a.textContent || "").replace(/\s+/g, " ").trim() || m[1];
-      // colour straight from the CMS: custom attribute data-color on the link (or its item), bound to the Color field
-      var cEl = a.closest("[data-color]"), color = cEl ? cEl.getAttribute("data-color").trim() : "";
+      // colour straight from the CMS, no request: Dynamic style settings → "Get Border Color from
+      // Typefaces" on the link (Webflow writes style="border-color:…"; the link has no border, so
+      // nothing shows), or a data-color attribute. Looked up on the link, inside it, or on its item.
+      var item = a.closest(".w-dyn-item") || a, color = "";
+      [a].concat([].slice.call(a.querySelectorAll("[style]")), item).some(function (e) { return (color = e.getAttribute("data-color") || e.style.borderColor || "").trim(); });
       return { slug: m[1], href: href, name: name, fam: name.split(" ")[0], color: color };
     }).filter(Boolean);
   }
